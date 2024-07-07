@@ -1,0 +1,17 @@
+package ch.verver.poly_y;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class GameActivity extends Activity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        TextView label = new TextView(this);
+        label.setText("Hello world!");
+
+        setContentView(label);
+    }
+}
