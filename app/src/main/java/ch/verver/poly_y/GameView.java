@@ -33,6 +33,7 @@ public class GameView extends View {
     private final Paint vertexFill = new Paint();
     private final Paint edgeStroke = new Paint();
     private final Paint selectedVertexPaint = new Paint();
+    private final Paint lastMoveMarkerPaint = new Paint();
 
     private final ArrayList<FieldClickListener> fieldClickListeners = new ArrayList<>();
 
@@ -152,6 +153,18 @@ public class GameView extends View {
                 selectedVertexPaint.setStrokeWidth(0.167f / geometry.boardSize);
                 canvas.drawCircle(v.x, v.y, 0.25f / geometry.boardSize, selectedVertexPaint);
             }
+        }
+
+        BoardGeometry.Vertex lastMovePos = state.gameState.getLastMove();
+        if (lastMovePos != null) {
+            lastMoveMarkerPaint.reset();
+            lastMoveMarkerPaint.setStyle(Paint.Style.FILL);
+            lastMoveMarkerPaint.setColor(0xffffffff);
+            float d = 0.1f / geometry.boardSize;
+            canvas.drawRect(
+                    lastMovePos.x - d, lastMovePos.y - d,
+                    lastMovePos.x + d, lastMovePos.y + d,
+                    lastMoveMarkerPaint);
         }
     }
 }

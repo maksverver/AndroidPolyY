@@ -46,6 +46,10 @@ public final class GameState {
         return (moves.length & 1) + 1;
     }
 
+    public @Nullable BoardGeometry.Vertex getLastMove() {
+        return moves.length == 0 ? null : geometry.vertices.get(moves[moves.length - 1]);
+    }
+
     /** Returns the color of the piece on the field; either 1 or 2, or 0 if empty. */
     public int getPiece(BoardGeometry.Vertex v) {
         return pieces[v.id];
