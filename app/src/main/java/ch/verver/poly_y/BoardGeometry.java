@@ -1,5 +1,7 @@
 package ch.verver.poly_y;
 
+import androidx.annotation.Nullable;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -7,7 +9,7 @@ import java.util.List;
  * Immutable description of a Poly-Y game board, which consists of a central vertex surrounded
  * by concentric polygons (with an equal number of sides).
  */
-public class BoardGeometry {
+public final class BoardGeometry {
 
     /** The smallest possible board, which has just 1 vertex and no edges. */
     public static final BoardGeometry DUMMY_GEOMETRY = new BoardGeometry(1, 3);
@@ -91,8 +93,8 @@ public class BoardGeometry {
     public final List<Edge> edges;
 
     public BoardGeometry(int boardSize, int sides) {
-        if (boardSize < 0) throw new IllegalArgumentException();
-        if (sides < 3) throw new IllegalArgumentException();
+        if (boardSize < 1) throw new IllegalArgumentException("boardSize must be at least 1");
+        if (sides < 3) throw new IllegalArgumentException("sides must be at least 3");
 
         this.boardSize = boardSize;
         this.sides = sides;
@@ -152,5 +154,18 @@ public class BoardGeometry {
             side %= sides;
         }
         return 1 + sides*(size - 1)*size/2 + size*side + index;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof BoardGeometry)) return false;
+        BoardGeometry other = (BoardGeometry) obj;
+        return boardSize == other.boardSize && sides == other.sides;
+    }
+
+    @Override
+    public int hashCode() {
+        return sides + 31*boardSize;
     }
 }

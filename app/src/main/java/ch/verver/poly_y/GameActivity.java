@@ -45,8 +45,14 @@ public class GameActivity extends Activity {
             }
         });
 
-        gameRegistry = GameRegistry.getInstance();
-        changeState(new GameStateWithSelection(gameRegistry.getCurrentGameState()));
+        gameRegistry = GameRegistry.getInstance(getApplicationContext());
+        GameState gameState = gameRegistry.getCurrentGameState();
+        if (gameState == null) {
+            // Start a new game. This isn't atomic, but whatever.
+            gameState = GameState.DEFAULT_GAME_STATE;
+            gameRegistry.saveCurrentGameState(gameState);
+        }
+        changeState(new GameStateWithSelection(gameState));
     }
 
     @Override

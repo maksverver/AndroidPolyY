@@ -6,7 +6,7 @@ import androidx.annotation.Nullable;
 import java.util.Objects;
 
 /** Immutable pair of a game state and an optional selected field. */
-public class GameStateWithSelection {
+public final class GameStateWithSelection {
     public static final GameStateWithSelection DUMMY_GAME_STATE_WITH_SELECTION
             = new GameStateWithSelection(GameState.DUMMY_GAME_STATE);
 
@@ -33,6 +33,7 @@ public class GameStateWithSelection {
 
     @Override
     public boolean equals(@Nullable Object obj) {
+        if (obj == this) return true;
         if (!(obj instanceof GameStateWithSelection)) return false;
         GameStateWithSelection other = (GameStateWithSelection) obj;
         return Objects.equals(gameState, other.gameState) && Objects.equals(selection, other.selection);
