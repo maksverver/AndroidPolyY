@@ -1,11 +1,23 @@
 package ch.verver.poly_y;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
+/**
+ * Immutable description of a Poly-Y game board, which consists of a central vertex surrounded
+ * by concentric polygons (with an equal number of sides).
+ */
 public class BoardGeometry {
+
+    /** The smallest possible board, which has just 1 vertex and no edges. */
+    public static final BoardGeometry DUMMY_GEOMETRY = new BoardGeometry(1, 3);
+
+    /**
+     * The Poly-Y board used for the CodeCup, which has 5 sides and size 7 (1 central vertex +
+     * 6 pentagons), for a total of 106 vertices and 285 edges.
+     */
+    public static final BoardGeometry DEFAULT_GEOMETRY = new BoardGeometry(7, 5);
+
     public static class Vertex {
 
         /** 0-based index of this vertex in the {@link BoardGeometry#vertices} array */
@@ -14,25 +26,23 @@ public class BoardGeometry {
         // 2D location
         public final float x, y;
 
-        // Bitmask of board edges this field touches.
-        public final int edges;
+        // Bitmask of which sides of the board this field touches.
+        public final int sidesMask;
 
-        Vertex(int id, float x, float y, int edges) {
+        Vertex(int id, float x, float y, int sidesMask) {
             this.id = id;
             this.x = x;
             this.y = y;
-            this.edges = edges;
+            this.sidesMask = sidesMask;
         }
 
         static Vertex create(int id, int size, int side, int index, int boardSize, int sides) {
             final double roundness = 0.4f;
-            // The board consists of vertices that lie on concentric pentagons,
-            // such that the pentagon of size S has S vertices per side.
-            //
-            // Each pentagon has 5 sides, of course, so a vertex can be identified
-            // by the triple (size, side, index) where size is the size of the pentagon,
-            // side is the side of the pentagon (0 <= side < 5) and index is the index
-            // of the pentago (0 <= index < size).
+            // The board consists of vertices that lie on concentric polygons, such that each
+            // polygon of size S has S vertices per side. Vertices can be identified by the triple
+            // (size, side, index) where size is the size of the polygon, side is the side of the
+            // pentagon (0 <= side < sides) and index is the index of the vertex on this side
+            // (0 <= index < size).
             //
             // To make the board look more aesthetically pleasing, we calculate not just the
             // position of vertices on a regular pentagon, but also on a circle with radius
@@ -61,8 +71,8 @@ public class BoardGeometry {
                 x = (1 - roundness)*x3 + roundness*x4;
                 y = (1 - roundness)*y3 + roundness*y4;
             }
-            int edges = 0; // TODO
-            return new Vertex(id, (float) x, (float) y, edges);
+            int sidesMask = 0; // TODO
+            return new Vertex(id, (float) x, (float) y, sidesMask);
         }
     }
 
@@ -77,14 +87,8 @@ public class BoardGeometry {
 
     public final int boardSize;
     public final int sides;
-
     public final List<Vertex> vertices;
-
     public final List<Edge> edges;
-
-    public BoardGeometry() {
-        this(7, 5);
-    }
 
     public BoardGeometry(int boardSize, int sides) {
         if (boardSize < 0) throw new IllegalArgumentException();
@@ -96,9 +100,6 @@ public class BoardGeometry {
         int vertexCount = 1 + sides*(boardSize - 1)*boardSize/2;
         Vertex[] vertices = new Vertex[vertexCount];
         vertices[0] = Vertex.create(0, 0, 0, 0, boardSize, sides);
-
-        // Maybe TODO: precompute edge count too?
-        ArrayList<Edge> edges = new ArrayList<Edge>();
 
         int vertexId = 1;
         for (int size = 1; size < boardSize; ++size) {
@@ -113,23 +114,28 @@ public class BoardGeometry {
             throw new RuntimeException("Unexpected number of vertices (" + vertexId + "; expected: " + vertexCount + ")");
         }
 
+        int edgeCount = sides*(boardSize - 1)*(3*boardSize - 2)/2;
+        Edge[] edges = new Edge[edgeCount];
+        int edgeId = 0;
         vertexId = 1;
         for (int size = 1; size < boardSize; ++size) {
             for (int side = 0; side < sides; ++side) {
                 for (int index = 0; index < size; ++index) {
-                    vertices[vertexId] = Vertex.create(vertexId, size, side, index, boardSize, sides);
-                    edges.add(new Edge(vertices[vertexId], vertices[coordsToId(size, side, index + 1, sides)]));
-                    edges.add(new Edge(vertices[vertexId], vertices[coordsToId(size - 1, side, index, sides)]));
+                    edges[edgeId++] = new Edge(vertices[vertexId], vertices[coordsToId(size, side, index + 1, sides)]);
+                    edges[edgeId++] = new Edge(vertices[vertexId], vertices[coordsToId(size - 1, side, index, sides)]);
                     if (index > 0) {
-                        edges.add(new Edge(vertices[vertexId], vertices[coordsToId(size - 1, side, index - 1, sides)]));
+                        edges[edgeId++] = new Edge(vertices[vertexId], vertices[coordsToId(size - 1, side, index - 1, sides)]);
                     }
                     ++vertexId;
                 }
             }
         }
+        if (edgeId != edgeCount) {
+            throw new RuntimeException("Unexpected number of edges (" + edgeId + "; expected: " + edgeCount + ")");
+        }
 
         this.vertices = Arrays.asList(vertices);
-        this.edges = Collections.unmodifiableList(edges);
+        this.edges = Arrays.asList(edges);
     }
 
     // Assumes 0 <= size, 0 <= side < sides, 0 <= index <= side.

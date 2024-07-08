@@ -10,22 +10,35 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
+
 public class GameView extends View {
     private static final String TAG = "GameView";
 
-    private final BoardGeometry geometry = new BoardGeometry();
+    private static final int[] PLAYER_COLORS = {
+        0xff404040,  // beige (neutral)
+        0xffe00000,  // red (player 1)
+        0xff0040c0,  // blue (player 2)
+    };
+
+    public interface FieldClickListener {
+        void onFieldClick(BoardGeometry.Vertex v);
+    }
+
+    private GameStateWithSelection state = GameStateWithSelection.DUMMY_GAME_STATE_WITH_SELECTION;
 
     private final Matrix viewMatrix = new Matrix();
     private final Matrix inverseMatrix = new Matrix();
 
     private final Paint vertexFill = new Paint();
     private final Paint edgeStroke = new Paint();
-    private final Paint selectedVertexFill = new Paint();
+    private final Paint selectedVertexPaint = new Paint();
 
-    private int selected = -1;
+    private final ArrayList<FieldClickListener> fieldClickListeners = new ArrayList<>();
 
-    final OnTouchListener touchListener =
+    private final OnTouchListener touchListener =
         (View view, MotionEvent event) -> {
+            final BoardGeometry geometry = state.gameState.getGeometry();;
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN: {
                     float[] xy = new float[]{event.getX(), event.getY()};
@@ -34,12 +47,13 @@ public class GameView extends View {
                     // This could be optimized... but it's probably not necessary.
                     for (BoardGeometry.Vertex v : geometry.vertices) {
                         if (Math.hypot(v.x - x, v.y - y) < 0.5f / geometry.boardSize) {
-                            if (v.id == selected) {
-                                selected = -1;
-                            } else {
-                                selected = v.id;
+                            for (FieldClickListener listener : fieldClickListeners) {
+                                try {
+                                    listener.onFieldClick(v);
+                                } catch (Exception e) {
+                                    Log.w(TAG, "FieldClickListener threw exception!", e);
+                                }
                             }
-                            invalidate();
                             return true;
                         }
                     }
@@ -77,6 +91,20 @@ public class GameView extends View {
         setOnTouchListener(touchListener);
     }
 
+    public void addFieldClickListener(FieldClickListener listener) {
+        fieldClickListeners.add(listener);
+    }
+
+    public boolean removeFieldClickListener(FieldClickListener listener) {
+        return fieldClickListeners.remove(listener);
+    }
+
+    public void setGameState(GameStateWithSelection state) {
+        if (this.state.equals(state)) return;
+        this.state = state;
+        invalidate();
+    }
+
     @Override
     protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
         super.onSizeChanged(width, height, oldWidth, oldHeight);
@@ -97,28 +125,32 @@ public class GameView extends View {
         super.onDraw(canvas);
         canvas.concat(viewMatrix);
 
-        int neutralColor = 0xffeeeeaa;  // light yellow
+        final BoardGeometry geometry = state.gameState.getGeometry();;
 
         edgeStroke.reset();
-        edgeStroke.setColor(neutralColor);
         edgeStroke.setStyle(Paint.Style.STROKE);
         edgeStroke.setStrokeWidth(0.075f / geometry.boardSize);
         edgeStroke.setStrokeCap(Paint.Cap.ROUND);
         for (BoardGeometry.Edge e : geometry.edges) {
+            int p1 = state.gameState.getPiece(e.v);
+            int p2 = state.gameState.getPiece(e.w);
+            edgeStroke.setColor(PLAYER_COLORS[p1 == p2 ? p1 : 0]);
             canvas.drawLine(e.v.x, e.v.y, e.w.x, e.w.y, edgeStroke);
         }
 
         vertexFill.reset();
-        vertexFill.setColor(neutralColor);
         vertexFill.setStyle(Paint.Style.FILL);
         for (BoardGeometry.Vertex v : geometry.vertices) {
-            if (v.id == selected) {
-                selectedVertexFill.reset();
-                selectedVertexFill.setColor(0xffff00ff);  // magenta
-                selectedVertexFill.setStyle(Paint.Style.FILL);
-                canvas.drawCircle(v.x, v.y, 0.4f / geometry.boardSize, selectedVertexFill);
-            } else {
-                canvas.drawCircle(v.x, v.y, 0.25f / geometry.boardSize, vertexFill);
+            int player = state.gameState.getPiece(v);
+            vertexFill.setColor(PLAYER_COLORS[player]);
+            canvas.drawCircle(v.x, v.y, (player == 0 ? 0.167f : 0.33f) / geometry.boardSize, vertexFill);
+
+            if (v.equals(state.selection)) {
+                selectedVertexPaint.reset();
+                selectedVertexPaint.setColor(PLAYER_COLORS[state.gameState.getNextPlayer()]);
+                selectedVertexPaint.setStyle(Paint.Style.STROKE);
+                selectedVertexPaint.setStrokeWidth(0.167f / geometry.boardSize);
+                canvas.drawCircle(v.x, v.y, 0.25f / geometry.boardSize, selectedVertexPaint);
             }
         }
     }
