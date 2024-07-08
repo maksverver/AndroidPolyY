@@ -8,10 +8,6 @@ public class GameActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        TextView label = new TextView(this);
-        label.setText("Hello world!");
-
-        setContentView(label);
+        setContentView(R.layout.game_layout);
     }
 }
