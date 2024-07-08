@@ -2,7 +2,8 @@ package ch.verver.poly_y;
 
 import androidx.annotation.Nullable;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -100,44 +101,41 @@ public final class BoardGeometry {
         this.sides = sides;
 
         int vertexCount = 1 + sides*(boardSize - 1)*boardSize/2;
-        Vertex[] vertices = new Vertex[vertexCount];
-        vertices[0] = Vertex.create(0, 0, 0, 0, boardSize, sides);
+        ArrayList<Vertex> vertices = new ArrayList<>(vertexCount);
+        vertices.add(Vertex.create(0, 0, 0, 0, boardSize, sides));
 
+        for (int size = 1; size < boardSize; ++size) {
+            for (int side = 0; side < sides; ++side) {
+                for (int index = 0; index < size; ++index) {
+                    vertices.add(Vertex.create(vertices.size(), size, side, index, boardSize, sides));
+                }
+            }
+        }
+        if (vertices.size() != vertexCount) {
+            throw new RuntimeException("Unexpected number of vertices (" + vertices.size() + " instead of " + vertexCount + ")");
+        }
+
+        int edgeCount = sides*(boardSize - 1)*(3*boardSize - 2)/2;
+        ArrayList<Edge> edges = new ArrayList<>(edgeCount);
         int vertexId = 1;
         for (int size = 1; size < boardSize; ++size) {
             for (int side = 0; side < sides; ++side) {
                 for (int index = 0; index < size; ++index) {
-                    vertices[vertexId] = Vertex.create(vertexId, size, side, index, boardSize, sides);
-                    ++vertexId;
-                }
-            }
-        }
-        if (vertexId != vertexCount) {
-            throw new RuntimeException("Unexpected number of vertices (" + vertexId + "; expected: " + vertexCount + ")");
-        }
-
-        int edgeCount = sides*(boardSize - 1)*(3*boardSize - 2)/2;
-        Edge[] edges = new Edge[edgeCount];
-        int edgeId = 0;
-        vertexId = 1;
-        for (int size = 1; size < boardSize; ++size) {
-            for (int side = 0; side < sides; ++side) {
-                for (int index = 0; index < size; ++index) {
-                    edges[edgeId++] = new Edge(vertices[vertexId], vertices[coordsToId(size, side, index + 1, sides)]);
-                    edges[edgeId++] = new Edge(vertices[vertexId], vertices[coordsToId(size - 1, side, index, sides)]);
+                    edges.add(new Edge(vertices.get(vertexId), vertices.get(coordsToId(size, side, index + 1, sides))));
+                    edges.add(new Edge(vertices.get(vertexId), vertices.get(coordsToId(size - 1, side, index, sides))));
                     if (index > 0) {
-                        edges[edgeId++] = new Edge(vertices[vertexId], vertices[coordsToId(size - 1, side, index - 1, sides)]);
+                        edges.add(new Edge(vertices.get(vertexId), vertices.get(coordsToId(size - 1, side, index - 1, sides))));
                     }
                     ++vertexId;
                 }
             }
         }
-        if (edgeId != edgeCount) {
-            throw new RuntimeException("Unexpected number of edges (" + edgeId + "; expected: " + edgeCount + ")");
+        if (edges.size() != edgeCount) {
+            throw new RuntimeException("Unexpected number of edges (" + edges.size() + " instead of " + edgeCount + ")");
         }
 
-        this.vertices = Arrays.asList(vertices);
-        this.edges = Arrays.asList(edges);
+        this.vertices = Collections.unmodifiableList(vertices);
+        this.edges = Collections.unmodifiableList(edges);
     }
 
     // Assumes 0 <= size, 0 <= side < sides, 0 <= index <= side.
