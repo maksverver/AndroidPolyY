@@ -9,6 +9,7 @@ import android.widget.Button;
 public class GameActivity extends Activity {
     private static final String TAG = "GameActivity";
 
+    private GameRegistry gameRegistry;
     private GameView gameView;
     private Button confirmButton;
     private GameStateWithSelection state;
@@ -22,17 +23,18 @@ public class GameActivity extends Activity {
 
     private void changeState(GameStateWithSelection newState) {
         state = newState;
-        gameView.setGameState(newState);
+        gameView.setGameState(state);
         confirmButton.setEnabled(state.selection != null);
+        gameRegistry.saveCurrentGameState(state.gameState);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.game_layout);
         gameView = findViewById(R.id.gameView);
         confirmButton = findViewById(R.id.confirmButton);
-        changeState(new GameStateWithSelection(GameState.createInitial(BoardGeometry.DEFAULT_GEOMETRY)));
         confirmButton.setOnClickListener((View unused) -> {
             if (state.selection == null) {
                 Log.w(TAG, "Confirm button clicked but no selection active!");
@@ -42,6 +44,9 @@ public class GameActivity extends Activity {
                 changeState(new GameStateWithSelection(state.gameState.move(state.selection)));
             }
         });
+
+        gameRegistry = GameRegistry.getInstance();
+        changeState(new GameStateWithSelection(gameRegistry.getCurrentGameState()));
     }
 
     @Override
