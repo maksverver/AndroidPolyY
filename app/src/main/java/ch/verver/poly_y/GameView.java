@@ -30,10 +30,11 @@ public class GameView extends View {
     private final Matrix viewMatrix = new Matrix();
     private final Matrix inverseMatrix = new Matrix();
 
-    private final Paint vertexFill = new Paint();
-    private final Paint edgeStroke = new Paint();
-    private final Paint selectedVertexPaint = new Paint();
-    private final Paint lastMoveMarkerPaint = new Paint();
+    // Some temporary paint objects that are used in draw() to avoid allocations (which triggers
+    // a warning, even though it is probably not a big deal). Usually, paint1 is used to stroke,
+    // and paint2 to fill.
+    private final Paint paint1 = new Paint();
+    private final Paint paint2 = new Paint();
 
     private final ArrayList<FieldClickListener> fieldClickListeners = new ArrayList<>();
 
@@ -96,8 +97,8 @@ public class GameView extends View {
         fieldClickListeners.add(listener);
     }
 
-    public boolean removeFieldClickListener(FieldClickListener listener) {
-        return fieldClickListeners.remove(listener);
+    public void removeFieldClickListener(FieldClickListener listener) {
+        fieldClickListeners.remove(listener);
     }
 
     public void setGameState(GameStateWithSelection state) {
@@ -128,43 +129,55 @@ public class GameView extends View {
 
         final BoardGeometry geometry = state.gameState.getGeometry();;
 
-        edgeStroke.reset();
-        edgeStroke.setStyle(Paint.Style.STROKE);
-        edgeStroke.setStrokeWidth(0.075f / geometry.boardSize);
-        edgeStroke.setStrokeCap(Paint.Cap.ROUND);
+        paint1.reset();
+        paint1.setStyle(Paint.Style.STROKE);
+        paint1.setStrokeWidth(0.075f / geometry.boardSize);
+        paint1.setStrokeCap(Paint.Cap.ROUND);
         for (BoardGeometry.Edge e : geometry.edges) {
             int p1 = state.gameState.getPiece(e.v);
             int p2 = state.gameState.getPiece(e.w);
-            edgeStroke.setColor(PLAYER_COLORS[p1 == p2 ? p1 : 0]);
-            canvas.drawLine(e.v.x, e.v.y, e.w.x, e.w.y, edgeStroke);
+            paint1.setColor(PLAYER_COLORS[p1 == p2 ? p1 : 0]);
+            canvas.drawLine(e.v.x, e.v.y, e.w.x, e.w.y, paint1);
         }
 
-        vertexFill.reset();
-        vertexFill.setStyle(Paint.Style.FILL);
+        paint2.reset();
+        paint2.setStyle(Paint.Style.FILL);
         for (BoardGeometry.Vertex v : geometry.vertices) {
             int player = state.gameState.getPiece(v);
-            vertexFill.setColor(PLAYER_COLORS[player]);
-            canvas.drawCircle(v.x, v.y, (player == 0 ? 0.167f : 0.33f) / geometry.boardSize, vertexFill);
+            paint2.setColor(PLAYER_COLORS[player]);
+            canvas.drawCircle(v.x, v.y, (player == 0 ? 0.167f : 0.33f) / geometry.boardSize, paint2);
 
             if (v.equals(state.selection)) {
-                selectedVertexPaint.reset();
-                selectedVertexPaint.setColor(PLAYER_COLORS[state.gameState.getNextPlayer()]);
-                selectedVertexPaint.setStyle(Paint.Style.STROKE);
-                selectedVertexPaint.setStrokeWidth(0.167f / geometry.boardSize);
-                canvas.drawCircle(v.x, v.y, 0.25f / geometry.boardSize, selectedVertexPaint);
+                paint1.reset();
+                paint1.setStyle(Paint.Style.STROKE);
+                paint1.setStrokeWidth(0.167f / geometry.boardSize);
+                paint1.setColor(PLAYER_COLORS[state.gameState.getNextPlayer()]);
+                canvas.drawCircle(v.x, v.y, 0.25f / geometry.boardSize, paint1);
             }
         }
 
         BoardGeometry.Vertex lastMovePos = state.gameState.getLastMove();
         if (lastMovePos != null) {
-            lastMoveMarkerPaint.reset();
-            lastMoveMarkerPaint.setStyle(Paint.Style.FILL);
-            lastMoveMarkerPaint.setColor(0xffffffff);
+            paint2.reset();
+            paint2.setStyle(Paint.Style.FILL);
+            paint2.setColor(0xffffffff);
             float d = 0.1f / geometry.boardSize;
             canvas.drawRect(
                     lastMovePos.x - d, lastMovePos.y - d,
                     lastMovePos.x + d, lastMovePos.y + d,
-                    lastMoveMarkerPaint);
+                    paint2);
+        }
+
+        // Draw corners that have been captured.
+        paint1.reset();
+        paint1.setStyle(Paint.Style.STROKE);
+        for (int corner = 0; corner < geometry.sides; ++corner) {
+            int player = 0;  // TODO!
+            paint1.setStrokeWidth((player == 0 ? 0.1f : 0.2f) / geometry.boardSize);
+            paint1.setColor(PLAYER_COLORS[player]);
+            float sweepAngle = 360f / geometry.sides * 0.8f;
+            float startAngle = 360f * corner / geometry.sides - sweepAngle/2 - 90;
+            canvas.drawArc(-0.95f, -0.95f, 0.95f, 0.95f,  startAngle, sweepAngle, false, paint1);
         }
     }
 }

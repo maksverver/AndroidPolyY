@@ -32,6 +32,23 @@ public class GameActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Support overriding the application state using extras passed in the intent that launched
+        // the activity. This is useful for debugging (see DEVELOPMENT.txt).
+        Bundle extras = getIntent().getExtras();
+        GameState overrideGameState = null;
+        if (extras != null) {
+            String gameStateString = extras.getString("override_game_state");
+            if (gameStateString != null) {
+                try {
+                    overrideGameState = GameState.decodeFromString(gameStateString);
+                    Log.i(TAG, "Overriding game state from intent extra!");
+                } catch (Exception e) {
+                    Log.e(TAG, "Could not parse game state string; skipping game state override.", e);
+                }
+            }
+        }
+
+        // Create the layout and connect views.
         setContentView(R.layout.game_layout);
         gameView = findViewById(R.id.gameView);
         confirmButton = findViewById(R.id.confirmButton);
@@ -46,7 +63,7 @@ public class GameActivity extends Activity {
         });
 
         gameRegistry = GameRegistry.getInstance(getApplicationContext());
-        GameState gameState = gameRegistry.getCurrentGameState();
+        GameState gameState = overrideGameState != null ? overrideGameState : gameRegistry.getCurrentGameState();
         if (gameState == null) {
             // Start a new game. This isn't atomic, but whatever.
             gameState = GameState.DEFAULT_GAME_STATE;

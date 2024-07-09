@@ -6,6 +6,8 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import java.util.Objects;
+
 public class GameRegistry {
     private static final String SHARED_PREFERENCES_NAME = "poly_y_prefs";
     private static final String CURRENT_GAME_KEY = "current_game";
@@ -13,7 +15,7 @@ public class GameRegistry {
     private final static String TAG = "GameRegistry";
     private static @Nullable GameRegistry instance;
 
-    private SharedPreferences sharedPreferences;
+    private final SharedPreferences sharedPreferences;
     private @Nullable GameState currentGameState;
 
     GameRegistry(Context applicationContext) {
@@ -42,11 +44,17 @@ public class GameRegistry {
     }
 
     public synchronized void saveCurrentGameState(@Nullable GameState gameState) {
+        if (Objects.equals(gameState, currentGameState)) {
+            Log.i(TAG, "Game state unchanged; skipping save.");
+            return;
+        }
         currentGameState = gameState;
         if (gameState == null) {
             sharedPreferences.edit().remove(CURRENT_GAME_KEY).apply();
         } else {
-            sharedPreferences.edit().putString(CURRENT_GAME_KEY, gameState.encodeAsString()).apply();
+            String encodedGameState = gameState.encodeAsString();
+            Log.i(TAG, "Saving state: " + encodedGameState);
+            sharedPreferences.edit().putString(CURRENT_GAME_KEY, encodedGameState).apply();
         }
     }
 }
