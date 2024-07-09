@@ -321,7 +321,7 @@ public class Lynx3 {
     }
 
     // Our player
-    public class TreeBotFinal {
+    public static class TreeBotFinal {
         // The game tree for the current game position
         private Tree tree = null;
 
@@ -891,6 +891,29 @@ public class Lynx3 {
 
                 return result;
             }
+        }
+
+        /** Runs a benchmark and returns the number of expansions per second. */
+        double benchmark(long durationMillis) {
+            Tree tree = new Tree(new GameState(), true);
+
+            // Call expand() a few times to warm up.
+            for (int repeat = 0; repeat < 50; ++repeat) {
+                tree.expand();
+            }
+
+            long start = System.currentTimeMillis();
+            long finish;
+            long expansions = 0;
+            while ((finish = System.currentTimeMillis()) - start < durationMillis) {
+                // Repeat 50 times to reduce the overhead of the outer loop. (Most devices do over
+                // 1000 expansions per second, so this doesn't affect the total duration much.)
+                for (int repeat = 0; repeat < 50; ++repeat) {
+                    tree.expand();
+                    expansions++;
+                }
+            }
+            return expansions * 1000.0 / (finish - start);
         }
     }
 }

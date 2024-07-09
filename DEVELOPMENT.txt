@@ -6,3 +6,14 @@ Example:
 The game state strings can be found in the SharedPreferences file, and are also logged to logcat:
 
 % adb logcat -s GameRegistry
+
+
+To benchmark the AI on the phone:
+
+% adb shell am start-activity -n ch.verver.poly_y/.BenchmarkActivity -el duration_ms 5000
+
+(The duration_ms extra is optional.)
+
+For reference: I get around 2300 expansions/second on qemu, and around 1800 on my
+Samsung A52 (though around 2300 too if I run for only 100 ms; the CPU probably
+has some kind of burst mode.)
