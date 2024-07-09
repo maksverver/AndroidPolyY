@@ -1,8 +1,10 @@
 package ch.verver.poly_y;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -78,6 +80,12 @@ public final class BoardGeometry {
             }
             return new Vertex(id, (float) x, (float) y, sidesMask);
         }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return "Vertex{id=" + id + "}";
+        }
     }
 
     public static class Edge {
@@ -87,6 +95,12 @@ public final class BoardGeometry {
         }
 
         public final Vertex v, w;
+
+        @NonNull
+        @Override
+        public String toString() {
+            return "Edge{v=" + v.id + ", w=" + w.id + "}";
+        }
     }
 
     /** The smallest possible board, which has just 1 vertex and no edges. */
@@ -107,6 +121,9 @@ public final class BoardGeometry {
     public final int sides;
     public final List<Vertex> vertices;
     public final List<Edge> edges;
+
+    private final int[] codeCupIds;
+    private final int[] inverseCodeCupIds;
 
     public BoardGeometry(int boardSize, int sides) {
         if (boardSize < MIN_BOARD_SIZE || boardSize > MAX_BOARD_SIZE) {
@@ -160,10 +177,61 @@ public final class BoardGeometry {
 
         this.vertices = Collections.unmodifiableList(vertices);
         this.edges = Collections.unmodifiableList(edges);
+
+        // Calculate CodeCup vertex ids, which are used by the Lynx AI. Vertices are numbered
+        // starting with 1 at the top, then moving down row by row, as shown here:
+        // https://archive.codecup.nl/2014/images/poly-y_board.png
+        // (The code below starts counting from 0 for consistency with the inverse ids.)
+        codeCupIds = new int[vertices.size()];
+        inverseCodeCupIds = new int[vertices.size()];
+        Arrays.fill(codeCupIds, -1);
+        Arrays.fill(inverseCodeCupIds, -1);
+        {
+            ArrayList<Vertex> todo = new ArrayList<>();
+            ArrayList<Vertex> nextTodo = new ArrayList<>();
+            boolean[] seen = new boolean[vertices.size()];
+            {
+                Vertex topVertex = vertices.get(0);
+                for (Vertex v : vertices) if (v.y < topVertex.y) topVertex = v;
+                seen[topVertex.id] = true;
+                todo.add(topVertex);
+            }
+
+            int nextCodeCupId = 0;
+            while (!todo.isEmpty()) {
+                nextTodo.clear();
+                for (Vertex v : todo) {
+                    assert codeCupIds[v.id] == -1;
+                    assert inverseCodeCupIds[nextCodeCupId] == -1;
+                    codeCupIds[v.id] = nextCodeCupId;
+                    inverseCodeCupIds[nextCodeCupId] = v.id;
+                    ++nextCodeCupId;
+                    for (Vertex w : v.neighbors) {
+                        if (!seen[w.id]) {
+                            seen[w.id] = true;
+                            nextTodo.add(w);
+                        }
+                    }
+                }
+                Collections.sort(nextTodo, (v, w) -> Float.compare(v.x, w.x));
+                ArrayList<Vertex> tmp = todo;
+                todo = nextTodo;
+                nextTodo = tmp;
+            }
+            assert nextCodeCupId == vertices.size();
+        }
+    }
+
+    Vertex codeCupIdToVertex(int codeCupId) {
+        return vertices.get(inverseCodeCupIds[codeCupId - 1]);
+    }
+
+    int vertexToCodeCupId(Vertex v) {
+        return codeCupIds[v.id] + 1;
     }
 
     // Assumes 0 <= size, 0 <= side < sides, 0 <= index <= side.
-    static int coordsToId(int size, int side, int index, int sides) {
+    static private int coordsToId(int size, int side, int index, int sides) {
         if (size < 0) throw new IllegalArgumentException();
         if (size == 0) {
             return 0;  // origin
