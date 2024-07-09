@@ -8,29 +8,25 @@ import java.util.List;
 
 /**
  * Immutable description of a Poly-Y game board, which consists of a central vertex surrounded
- * by concentric polygons (with an equal number of sides).
+ * by concentric polygons (with an equal number of sides). The number of corners necessarily
+ * equals the number of sides.
  */
 public final class BoardGeometry {
-
-    /** The smallest possible board, which has just 1 vertex and no edges. */
-    public static final BoardGeometry DUMMY_GEOMETRY = new BoardGeometry(1, 3);
-
-    /**
-     * The Poly-Y board used for the CodeCup, which has 5 sides and size 7 (1 central vertex +
-     * 6 pentagons), for a total of 106 vertices and 285 edges.
-     */
-    public static final BoardGeometry DEFAULT_GEOMETRY = new BoardGeometry(7, 5);
 
     public static class Vertex {
 
         /** 0-based index of this vertex in the {@link BoardGeometry#vertices} array */
         public final int id;
 
-        // 2D location
+        // 2D location inside a unit circle
         public final float x, y;
 
-        // Bitmask of which sides of the board this field touches.
+        /** Bitmask of which sides of the board this field touches. */
         public final int sidesMask;
+
+        private final ArrayList<Vertex> modifiableNeighbors = new ArrayList<>();
+
+        public final List<Vertex> neighbors = Collections.unmodifiableList(modifiableNeighbors);
 
         Vertex(int id, float x, float y, int sidesMask) {
             this.id = id;
@@ -74,7 +70,12 @@ public final class BoardGeometry {
                 x = (1 - roundness)*x3 + roundness*x4;
                 y = (1 - roundness)*y3 + roundness*y4;
             }
-            int sidesMask = 0; // TODO
+            int sidesMask = 0;
+            if (size + 1 == boardSize) {
+                // Vertex is at the edge of the board.
+                sidesMask |= 1 << side;
+                if (index == 0) sidesMask |= 1 << (side == 0 ? sides - 1 : side - 1);
+            }
             return new Vertex(id, (float) x, (float) y, sidesMask);
         }
     }
@@ -88,14 +89,32 @@ public final class BoardGeometry {
         public final Vertex v, w;
     }
 
+    /** The smallest possible board, which has just 1 vertex and no edges. */
+    public static final BoardGeometry DUMMY_GEOMETRY = new BoardGeometry(1, 3);
+
+    /**
+     * The Poly-Y board used for the CodeCup, which has 5 sides and size 7 (1 central vertex +
+     * 6 pentagons), for a total of 106 vertices and 285 edges.
+     */
+    public static final BoardGeometry DEFAULT_GEOMETRY = new BoardGeometry(7, 5);
+
+    public static final int MIN_BOARD_SIZE = 1;
+    public static final int MAX_BOARD_SIZE = 31;  // arbitrary upper bound
+    public static final int MIN_SIDES = 3;
+    public static final int MAX_SIDES = 31;  // because we use int bitmasks (without sign bit)
+
     public final int boardSize;
     public final int sides;
     public final List<Vertex> vertices;
     public final List<Edge> edges;
 
     public BoardGeometry(int boardSize, int sides) {
-        if (boardSize < 1) throw new IllegalArgumentException("boardSize must be at least 1");
-        if (sides < 3) throw new IllegalArgumentException("sides must be at least 3");
+        if (boardSize < MIN_BOARD_SIZE || boardSize > MAX_BOARD_SIZE) {
+            throw new IllegalArgumentException("boardSize must be between " + MIN_BOARD_SIZE + " and " + MAX_BOARD_SIZE);
+        }
+        if (sides < MIN_SIDES || sides > MAX_SIDES) {
+            throw new IllegalArgumentException("sides must be between " + MIN_SIDES + " and " + MAX_SIDES);
+        }
 
         this.boardSize = boardSize;
         this.sides = sides;
@@ -132,6 +151,11 @@ public final class BoardGeometry {
         }
         if (edges.size() != edgeCount) {
             throw new RuntimeException("Unexpected number of edges (" + edges.size() + " instead of " + edgeCount + ")");
+        }
+
+        for (Edge edge : edges) {
+            edge.v.modifiableNeighbors.add(edge.w);
+            edge.w.modifiableNeighbors.add(edge.v);
         }
 
         this.vertices = Collections.unmodifiableList(vertices);

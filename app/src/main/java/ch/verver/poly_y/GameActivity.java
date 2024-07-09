@@ -16,7 +16,7 @@ public class GameActivity extends Activity {
 
     private final GameView.FieldClickListener fieldClickListener = (BoardGeometry.Vertex v) -> {
         // TODO: only toggle selection if it is the player's turn!
-        if (state.gameState.canMove(v)) {
+        if (state.gameState.isValidMove(v)) {
             changeState(state.toggleSelection(v));
         }
     };
@@ -55,7 +55,7 @@ public class GameActivity extends Activity {
         confirmButton.setOnClickListener((View unused) -> {
             if (state.selection == null) {
                 Log.w(TAG, "Confirm button clicked but no selection active!");
-            } else if (!state.gameState.canMove(state.selection)) {
+            } else if (!state.gameState.isValidMove(state.selection)) {
                 Log.w(TAG, "Selected move is not valid!");
             } else {
                 changeState(new GameStateWithSelection(state.gameState.move(state.selection)));

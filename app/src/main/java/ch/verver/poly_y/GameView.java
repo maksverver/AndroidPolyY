@@ -172,7 +172,7 @@ public class GameView extends View {
         paint1.reset();
         paint1.setStyle(Paint.Style.STROKE);
         for (int corner = 0; corner < geometry.sides; ++corner) {
-            int player = 0;  // TODO!
+            int player = state.gameState.getCornerWinner(corner);
             paint1.setStrokeWidth((player == 0 ? 0.1f : 0.2f) / geometry.boardSize);
             paint1.setColor(PLAYER_COLORS[player]);
             float sweepAngle = 360f / geometry.sides * 0.8f;
