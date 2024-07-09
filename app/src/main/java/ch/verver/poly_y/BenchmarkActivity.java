@@ -3,12 +3,11 @@ package ch.verver.poly_y;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
-import java.util.Locale;
+import ch.verver.poly_y.ai.TreeBot;
 
 public class BenchmarkActivity extends Activity {
     private static final String DURATION_MS_KEY = "duration_ms";
@@ -29,7 +28,7 @@ public class BenchmarkActivity extends Activity {
 
         final Handler mainHandler = new Handler(getMainLooper());
         new Thread(() -> {
-            double expansionsPerSecond = new Lynx3.TreeBotFinal().benchmark(durationMs);
+            double expansionsPerSecond = new TreeBot().benchmark(durationMs);
             mainHandler.post(() -> {
                 text.setText(text.getText() + "Result: " + Math.round(expansionsPerSecond) + " expansions/second\n");
             });
