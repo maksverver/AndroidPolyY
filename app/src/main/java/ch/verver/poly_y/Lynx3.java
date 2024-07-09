@@ -18,18 +18,6 @@ import java.util.Map;
  */
 public class Lynx3 {
     public static final int POSITIONS = 106;            // Total number of positions on the board
-    // Masks for the 'edges' array
-    public static final int TOP_LEFT_EDGE = 1;
-    public static final int BOT_LEFT_EDGE = 2;
-    public static final int BOT_EDGE = 4;
-    public static final int BOT_RIGHT_EDGE = 8;
-    public static final int TOP_RIGHT_EDGE = 16;
-    // Masks for the 'corners' array
-    public static final int TOP_CORNER = 1;
-    public static final int TOP_LEFT_CORNER = 2;
-    public static final int BOT_LEFT_CORNER = 4;
-    public static final int BOT_RIGHT_CORNER = 8;
-    public static final int TOP_RIGHT_CORNER = 16;
     // Determines whether we win with a given set of captured corners
     // Given a set of captured corners encoded as the bitmask i, win[i] is true if this set of captured corners is winning, otherwise win[i] is false
     public static final boolean[] win = {false, false, false, false, false, false, false, true, false, false, false, true, false, true, true, true, false, false, false, true, false, true, true, true, false, true, true, true, true, true, true, true};
@@ -326,7 +314,7 @@ public class Lynx3 {
         private Tree tree = null;
 
         // The moves that have been played so far, used for querying the opening book
-        private final List<Integer> playedMoves = new ArrayList<Integer>();
+        private final List<Integer> playedMoves = new ArrayList<>();
 
         // Is this the first time we are playing?
         private boolean isFirst = true;
@@ -439,7 +427,7 @@ public class Lynx3 {
             // This array is used to allow O(1) removal of moves from the remainingMoves array
             private final byte[] positions;
             // Moves in remainingMoves starting from index end have already been played
-            private int end = POSITIONS;
+            private int end;
             // Bit sets encoding the board state
             private long myMovesLeft, myMovesRight;    // Moves played by me
             private long opMovesLeft, opMovesRight; // Moves played by the opponent
@@ -636,7 +624,7 @@ public class Lynx3 {
             }
 
             // Is a given position set in the bitset given by l and r?
-            private final boolean isSet(long l, long r, int i) {
+            private boolean isSet(long l, long r, int i) {
                 return (i < 64 && ((1L << i) & l) != 0) || (i >= 64 && ((1L << (i - 64)) & r) != 0);
             }
 
@@ -705,7 +693,7 @@ public class Lynx3 {
             private final Statistics statistics = new Statistics();
 
             // A mapping of moves to child nodes
-            private final Map<Integer, Tree> children = new HashMap<Integer, Tree>();
+            private final Map<Integer, Tree> children = new HashMap<>();
 
             // Constructs a tree node given a state and whether it is my move
             public Tree(GameState state, boolean myMove) {
@@ -734,8 +722,7 @@ public class Lynx3 {
                 long start = System.nanoTime();
 
                 // Call expand() as long as we have time
-                do {
-                } while (expand() != null && System.nanoTime() - start < time * 1000000000);
+                while (System.nanoTime() - start < time * 1000000000) expand();
 
                 // Select the move with the highest number of samples
                 int bestScore = -1;
@@ -819,7 +806,8 @@ public class Lynx3 {
                     }
                 }
 
-                if (children.get(selected) == null) {
+                Tree existingChild = children.get(selected);
+                if (existingChild == null) {
                     // If this child does not exist, create it
                     Tree child = new Tree(this, selected);
                     children.put(selected, child);
@@ -832,7 +820,7 @@ public class Lynx3 {
                     child.statistics.add(result, child.myMove);
                 } else {
                     // The child exists, recursively expand this child
-                    result = children.get(selected).expand();
+                    result = existingChild.expand();
                 }
 
                 // Update the statistics of this node
@@ -843,7 +831,7 @@ public class Lynx3 {
         }
 
         // The result of a set of AMAF playouts (as constructed by)
-        class AmafPlayout {
+        static class AmafPlayout {
             int samples;        // The number of samples performed
             int wins;            // The number of times we won
 
@@ -854,7 +842,7 @@ public class Lynx3 {
         }
 
         // The statistics stored in a node
-        class Statistics {
+        static class Statistics {
             int samples;    // The number of times this node has been sampled
             int wins;        // The number of samples where we have won
 
