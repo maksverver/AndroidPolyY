@@ -22,7 +22,7 @@ public class AiManager {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public interface AIMoveCallback {
-        void onAiMove(BoardGeometry.Vertex vertex, double winProbability);
+        void onAiMove(BoardGeometry.Vertex vertex, float winProbability);
     }
 
     /**
@@ -42,10 +42,11 @@ public class AiManager {
             throw new IllegalArgumentException("Geometry not supported by AI!");
         }
         executor.submit(() -> {
+            long startMs = System.currentTimeMillis();
             BoardGeometry geometry = gameState.getGeometry();
             BoardGeometry.Vertex lastMove = gameState.getLastMove();
             final BoardGeometry.Vertex bestMove;
-            double winProbability = 0.5;  // unknown probability
+            float winProbability = 0.5f;  // unknown probability
             if (lastMove != null && gameState.canSwap() &&
                     TreeBot.shouldSwap(geometry.vertexToCodeCupId(lastMove))) {
                 bestMove = lastMove;
@@ -58,11 +59,14 @@ public class AiManager {
                     // Note: we create a new tree from scratch every time, instead of reusing the
                     // subtree from the previous move. This reduces play strength slightly, because
                     // we cannot reuse information from a subtree, but it makes the code simpler.
-                    ccMove = new TreeBot().findBestMoveInIterations(ccMovesPlayed, config.iterations);
-                    winProbability = 0.5;  // TODO!
+                    TreeBot.BestMove ccBestMove = new TreeBot().findBestMoveInIterations(ccMovesPlayed, config.iterations);
+                    ccMove = ccBestMove.move;
+                    winProbability = ccBestMove.winProbability;
                 }
                 bestMove = geometry.codeCupIdToVertex(ccMove);
             }
+            long durationMs = System.currentTimeMillis() - startMs;
+            Log.i(TAG, "AI selected move " + bestMove.id + " with win probability " + winProbability + " in " + durationMs + " ms");
             try {
                 callback.onAiMove(bestMove, winProbability);
             } catch (Throwable t) {

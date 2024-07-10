@@ -40,7 +40,17 @@ public class TreeBot {
         return edgeDistance[move] > 1 || move == 15 || move == 24 || move == 71 || move == 81 || move == 96 || move == 95 || move == 74 || move == 63 || move == 18 || move == 11;
     }
 
-    public int findBestMoveInIterations(List<Integer> playedMoves, long iterations) {
+    public static class BestMove {
+        public final int move;
+        public final float winProbability;
+
+        BestMove(int move, float winProbability) {
+            this.move = move;
+            this.winProbability = winProbability;
+        }
+    };
+
+    public BestMove findBestMoveInIterations(List<Integer> playedMoves, long iterations) {
         GameState state = new GameState();
         boolean myTurn = playedMoves.size() % 2 == 0;
         for (int move : playedMoves) {
@@ -58,8 +68,8 @@ public class TreeBot {
         assert myTurn;
 
         Tree tree = new Tree(state);
-        int bestMove = tree.findBestMoveInIterations(iterations);
-        assert bestMove != 0;
+        BestMove bestMove = tree.findBestMoveInIterations(iterations);
+        assert bestMove.move != 0;
         return bestMove;
     }
 
@@ -405,28 +415,29 @@ public class TreeBot {
             return children.get(move);
         }
 
-        public int findBestMoveInIterations(long iterations) {
+        public BestMove findBestMoveInIterations(long iterations) {
             while (iterations-- > 0) expand();
             return getBestMove();
         }
 
-        private int getBestMove() {
+        private BestMove getBestMove() {
             // Select the move with the highest number of samples
-            int bestScore = -1;
+            int mostSamples = -1;
             int bestMove = state.remainingMoves[0];
+            float bestProbability = 0.5f;
             for (int i = 0; i < state.end; i++) {
                 int move = state.remainingMoves[i];
                 if (children.containsKey(move)) {
                     Tree child = children.get(move);
-
-                    int score = child.statistics.samples;
-                    if (score > bestScore) {
-                        bestScore = score;
+                    int samples = child.statistics.samples;
+                    if (samples > mostSamples) {
+                        mostSamples = samples;
                         bestMove = move;
+                        if (samples > 0) bestProbability = (float) child.statistics.wins / samples;
                     }
                 }
             }
-            return bestMove;
+            return new BestMove(bestMove, bestProbability);
         }
 
         // Expands the tree by creating the most promising child node, playing a monte carlo playout in this child node, and updating the statistics in all parent nodes

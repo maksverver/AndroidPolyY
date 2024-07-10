@@ -66,13 +66,10 @@ public class GameActivity extends Activity {
         if (aiPlayer == 0 || aiConfig == null || aiInProgress) return;
         final GameState originalGameState = state.gameState;
         if (originalGameState.getNextPlayer() == aiPlayer) {
-            long start = System.currentTimeMillis();
             aiInProgress = true;
-            AiManager.getInstance().requestAiMove(originalGameState, aiConfig, (move, unusedProbability) -> {
+            AiManager.getInstance().requestAiMove(originalGameState, aiConfig, (move, probability) -> {
                 runOnUiThread(() -> {
                     aiInProgress = false;
-                    long duration = System.currentTimeMillis() - start;
-                    Log.i(TAG, "AI selected move " + move.id + " in " + duration + " ms");
                     if (!originalGameState.equals(state.gameState)) {
                         // This should not happen normally; but just to be sure.
                         Log.w(TAG, "Game state has changed! ");
@@ -129,7 +126,7 @@ public class GameActivity extends Activity {
         hintButton.setEnabled(false);
         hintInProgress = true;
         final GameState originalGameState = state.gameState;
-        AiManager.getInstance().requestAiMove(originalGameState, AiConfig.HINT_CONFIG, (move, unusedProbability) -> {
+        AiManager.getInstance().requestAiMove(originalGameState, AiConfig.HINT_CONFIG, (move, probability) -> {
             runOnUiThread(() -> {
                 hintInProgress = false;
                 if (!originalGameState.equals(state.gameState)) {
