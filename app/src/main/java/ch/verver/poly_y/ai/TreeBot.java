@@ -1,6 +1,5 @@
 package ch.verver.poly_y.ai;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -33,84 +32,8 @@ public class TreeBot {
     private static final int SAMPLES = 32;                // Number of samples at tree nodes, has a huge effect on performance
     private static final double ALPHA = 0.75;            // Blending parameter for AMAF samples and actual samples in the computation of the score of a node
 
-    // Timing parameters
-    private static final int TIME_DIVIDER = 10;            // The remaining time is divided by this number to determine the time for the current move
-    private static final double MINIMUM_TIME = 0.1;        // The minimum amount of time used for a move
-
-    // The game tree for the current game position
-    private Tree tree = null;
-
-    // The moves that have been played so far, used for querying the opening book
-    private final List<Integer> playedMoves = new ArrayList<>();
-
-    // Is this the first time we are playing?
-    private boolean isFirst = true;
-
     // Derived from Random.java, removed synchronization and other checks to improve performance
     private long seed = System.nanoTime();
-
-    public int play(int lastMove, double remainingTime) {
-        if (lastMove > 0) {
-            playedMoves.add(lastMove);
-        }
-
-        // Process opponent move
-        if (lastMove > 0) {
-            if (tree == null) {
-                // If there is no game tree yet, construct one
-                tree = new Tree(new GameState(), false);
-            }
-            // Update the root of the tree to the child tree corresponding to the opponents move
-            tree = tree.treeAfterMove(lastMove);
-        } else {
-            // I start the game
-            if (lastMove == 0) tree = new Tree(new GameState(), true);
-
-            // Opponent chose to swap places
-            if (lastMove == -1) {
-                tree.state.swapPlayers();
-                tree = new Tree(tree.state, true);
-            }
-        }
-
-        // The move that we are going to play
-        int bestMove;
-
-        try {
-            if (isFirst && lastMove != 0 && shouldSwap(lastMove)) {
-                bestMove = -1;
-            } else {
-                // Query the opening book
-                bestMove = getOpeningMove(playedMoves);
-
-                if (bestMove == 0) {
-                    // If the opening book has no entry, compute the best move
-                    bestMove = tree.findBestMoveInTime(Math.max(remainingTime / TIME_DIVIDER, MINIMUM_TIME));
-                    if (bestMove == 0) bestMove = tree.state.remainingMoves[0];
-                }
-            }
-        } catch (Exception e) {
-            bestMove = tree.state.remainingMoves[0];    // Just in case something goes wrong, select a random move
-            e.printStackTrace(System.err);
-        }
-
-        // Update the game tree based on the move that we have selected
-        if (bestMove == -1) {
-            tree.state.swapPlayers();
-            tree = new Tree(tree.state, false);
-        } else {
-            // Update the root of the tree to the move corresponding to our move
-            tree = tree.treeAfterMove(bestMove);
-        }
-
-        isFirst = false;
-
-        if (bestMove != -1) {
-            playedMoves.add(bestMove);
-        }
-
-        return bestMove;
-    }
 
     public static boolean shouldSwap(int move) {
         // We swap for all symmetries of move 15, and for all center moves (edge distance > 1)
@@ -134,7 +57,7 @@ public class TreeBot {
         }
         assert myTurn;
 
-        Tree tree = new Tree(state, myTurn);
+        Tree tree = new Tree(state);
         int bestMove = tree.findBestMoveInIterations(iterations);
         assert bestMove != 0;
         return bestMove;
@@ -443,7 +366,7 @@ public class TreeBot {
         }
     }
 
-    // Implementation of a tree node for monte carlo tree search (MTCS)
+    // Implementation of a tree node for monte carlo tree search (MCTS)
     private class Tree {
         private final GameState state;    // The game state at the current node
         private final boolean myMove;        // Is it my move? (note that this could also be passed around instead of storing it in tree nodes)
@@ -454,7 +377,10 @@ public class TreeBot {
         // A mapping of moves to child nodes
         private final Map<Integer, Tree> children = new HashMap<>();
 
-        // Constructs a tree node given a state and whether it is my move
+        public Tree(GameState state) {
+            this(state, true);
+        }
+
         public Tree(GameState state, boolean myMove) {
             this.state = state;
             this.myMove = myMove;
@@ -469,21 +395,14 @@ public class TreeBot {
         }
 
         // Gets the child node of this node for a given move
+        //
+        // Note: this is currently unused, but could be used to optimize the AI by reusing the
+        // computed data from the previous move in the next move.
         public Tree treeAfterMove(int move) {
             if (!children.containsKey(move)) {
                 return new Tree(this, move);
             }
             return children.get(move);
-        }
-
-        // Computes the best move given some amount of computation time
-        public int findBestMoveInTime(double time) {
-            long start = System.nanoTime();
-
-            // Call expand() as long as we have time
-            while (System.nanoTime() - start < time * 1000000000) expand();
-
-            return getBestMove();
         }
 
         public int findBestMoveInIterations(long iterations) {
@@ -652,7 +571,7 @@ public class TreeBot {
      * Runs a benchmark and returns the number of expansions per second.
      */
     public double benchmark(long durationMillis) {
-        Tree tree = new Tree(new GameState(), true);
+        Tree tree = new Tree(new GameState());
 
         // Call expand() a few times to warm up.
         for (int repeat = 0; repeat < 50; ++repeat) {
