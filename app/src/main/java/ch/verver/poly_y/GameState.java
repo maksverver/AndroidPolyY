@@ -37,7 +37,7 @@ public final class GameState {
             int player = 1;
             for (int move : moves) {
                 this.pieces[move] = (byte) player;
-                player = 3 - player;
+                player = otherPlayer(player);
             }
         }
 
@@ -97,6 +97,26 @@ public final class GameState {
         winner = 0;
     }
 
+    private GameState(GameState state, int winner) {
+        geometry = state.geometry;
+        canSwap = state.canSwap;
+        moves = state.moves;
+        pieces = state.pieces;
+        cornerWinners = state.cornerWinners;
+        scores = state.scores;
+        this.winner = winner;
+    }
+
+    public static int otherPlayer(int player) {
+        switch (player) {
+            case 0: return 0;
+            case 1: return 2;
+            case 2: return 1;
+            default:
+                throw new IllegalArgumentException("Invalid player");
+        }
+    }
+
     /** Creates an empty board with the given geometry, player 1 to move, and the pie-rule in effect. */
     public static GameState createInitial(BoardGeometry geometry) {
         return createInitial(geometry, true);
@@ -115,6 +135,10 @@ public final class GameState {
         // The second condition can only happen if geometry.sides is even, and each player has
         // captured half of the corners.
         return winner != 0 || scores[0] == 0;
+    }
+
+    public boolean isResigned() {
+        return winner != 0 && 2 * scores[winner] < cornerWinners.length;
     }
 
     /** Returns the next player (1 or 2), or 0 if the game is over. */
@@ -182,6 +206,15 @@ public final class GameState {
         newMoves[moves.length] = v.id;
 
         return new GameState(geometry, canSwap, newMoves);
+    }
+
+    @CheckResult
+    public GameState resign() {
+        int nextPlayer = getNextPlayer();
+        if (nextPlayer == 0) {
+            throw new IllegalArgumentException("Cannot resign when the game is over");
+        }
+        return new GameState(this, otherPlayer(nextPlayer));
     }
 
     public ArrayList<Integer> getCodeCupMoves() {

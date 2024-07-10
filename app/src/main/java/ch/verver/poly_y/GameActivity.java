@@ -15,6 +15,7 @@ public class GameActivity extends Activity {
 
     private GameRegistry gameRegistry;
     private TextView statusTextView;
+    private Button resignButton;
     private Button hintButton;
     private Button confirmButton;
     private GameView gameView;
@@ -34,6 +35,9 @@ public class GameActivity extends Activity {
     private void changeState(GameStateWithSelection newState) {
         state = newState;
         gameView.setGameState(state);
+        resignButton.setText(
+                getString(state.gameState.isGameOver() ? R.string.game_button_back : R.string.game_button_resign));
+        resignButton.setEnabled(!aiInProgress);
         confirmButton.setEnabled(state.selection != null);
         statusTextView.setText(getStatusText(state.gameState));
         gameRegistry.saveCurrentGameState(state.gameState);
@@ -45,6 +49,7 @@ public class GameActivity extends Activity {
     private String getStatusText(GameState gameState) {
         switch (gameState.getNextPlayer()) {
             case 0:
+                // TODO: show different message if player resigned.
                 switch (gameState.getWinner()) {
                     case 0: return getString(R.string.game_status_tied);
                     case 1: return getString(R.string.game_status_player_1_won);
@@ -105,9 +110,11 @@ public class GameActivity extends Activity {
         // Create the layout and connect views.
         setContentView(R.layout.game_layout);
         statusTextView = findViewById(R.id.statusTextView);
+        resignButton = findViewById(R.id.resignButton);
+        resignButton.setOnClickListener(this::onResignButtonClick);
         hintButton = findViewById(R.id.hintButton);
-        confirmButton = findViewById(R.id.confirmButton);
         hintButton.setOnClickListener(this::onHintButtonClick);
+        confirmButton = findViewById(R.id.confirmButton);
         confirmButton.setOnClickListener(this::onConfirmButtonClick);
         gameView = findViewById(R.id.gameView);
         gameView.addFieldClickListener(fieldClickListener);
@@ -120,6 +127,14 @@ public class GameActivity extends Activity {
             gameRegistry.saveCurrentGameState(gameState);
         }
         changeState(new GameStateWithSelection(gameState));
+    }
+
+    private void onResignButtonClick(View unusedView) {
+        if (!state.gameState.isGameOver()) {
+            changeState(new GameStateWithSelection(state.gameState.resign()));
+        } else {
+            // TODO: go back to main activity
+        }
     }
 
     private void onHintButtonClick(View unusedView) {

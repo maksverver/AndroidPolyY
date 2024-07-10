@@ -12,17 +12,24 @@
         android:orientation="horizontal">
 
         <Button
+            android:id="@+id/resignButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/game_button_resign" />
+
+        <Button
             android:id="@+id/hintButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="10"
+            android:layout_weight="1"
             android:text="@string/game_button_hint" />
 
         <Button
             android:id="@+id/confirmButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="10"
+            android:layout_weight="1"
             android:enabled="false"
             android:text="@string/game_button_confirm" />
 
