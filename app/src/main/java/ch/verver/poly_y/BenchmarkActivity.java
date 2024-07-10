@@ -26,13 +26,15 @@ public class BenchmarkActivity extends Activity {
         final long durationMs = getDurationMs();
         text.setText(text.getText() + "Duration: " + (durationMs * 1e-3) + " seconds\n");
 
-        final Handler mainHandler = new Handler(getMainLooper());
-        new Thread(() -> {
+        Thread thread = new Thread(() -> {
             double expansionsPerSecond = new TreeBot().benchmark(durationMs);
-            mainHandler.post(() -> {
+            runOnUiThread(() -> {
                 text.setText(text.getText() + "Result: " + Math.round(expansionsPerSecond) + " expansions/second\n");
             });
-        }, "AI Benchmark").start();;
+        });
+        thread.setName("AI Benchmark");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private long getDurationMs() {

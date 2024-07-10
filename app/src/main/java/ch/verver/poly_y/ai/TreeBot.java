@@ -77,15 +77,15 @@ public class TreeBot {
         int bestMove;
 
         try {
-            if (isFirst && lastMove != 0 && (edgeDistance[lastMove] > 1 || lastMove == 15 || lastMove == 24 || lastMove == 71 || lastMove == 81 || lastMove == 96 || lastMove == 95 || lastMove == 74 || lastMove == 63 || lastMove == 18 || lastMove == 11)) {
-                bestMove = -1;    // We swap for all symmetries of move 15, and for all center moves (edge distance > 1)
+            if (isFirst && lastMove != 0 && shouldSwap(lastMove)) {
+                bestMove = -1;
             } else {
                 // Query the opening book
                 bestMove = getOpeningMove(playedMoves);
 
                 if (bestMove == 0) {
                     // If the opening book has no entry, compute the best move
-                    bestMove = tree.findBestMove(Math.max(remainingTime / TIME_DIVIDER, MINIMUM_TIME));
+                    bestMove = tree.findBestMoveInTime(Math.max(remainingTime / TIME_DIVIDER, MINIMUM_TIME));
                     if (bestMove == 0) bestMove = tree.state.remainingMoves[0];
                 }
             }
@@ -112,12 +112,40 @@ public class TreeBot {
         return bestMove;
     }
 
-    public int randomInt() {
+    public static boolean shouldSwap(int move) {
+        // We swap for all symmetries of move 15, and for all center moves (edge distance > 1)
+        return edgeDistance[move] > 1 || move == 15 || move == 24 || move == 71 || move == 81 || move == 96 || move == 95 || move == 74 || move == 63 || move == 18 || move == 11;
+    }
+
+    public int findBestMoveInIterations(List<Integer> playedMoves, long iterations) {
+        GameState state = new GameState();
+        boolean myTurn = playedMoves.size() % 2 == 0;
+        for (int move : playedMoves) {
+            if (move == -1) {
+                state.swapPlayers();
+            } else {
+                if (myTurn) {
+                    state.updateMyMove(move);
+                } else {
+                    state.updateOpMove(move);
+                }
+            }
+            myTurn = !myTurn;
+        }
+        assert myTurn;
+
+        Tree tree = new Tree(state, myTurn);
+        int bestMove = tree.findBestMoveInIterations(iterations);
+        assert bestMove != 0;
+        return bestMove;
+    }
+
+    private int randomInt() {
         seed = seed * 0x5deece66dL + 0xbL;
         return (int) (seed >>> 16);
     }
 
-    public int randomInt(int n) {
+    private int randomInt(int n) {
         // Not completely correct, as results are a little biased, but good enough for our purpose
         // We shift by 16 because the higher bits provide higher quality randomness
         return (randomInt() >>> 16) % n;
@@ -125,7 +153,7 @@ public class TreeBot {
 
     // Get a move from the opening book based on the moves played so far
     // Returns either the move from the opening book, or 0 if the opening book does not contain the given move sequence
-    private int getOpeningMove(List<Integer> moves) {
+    static public int getOpeningMove(List<Integer> moves) {
         Object[] root = OpeningBook.openingBook;
 
         // Recursively go through the opening book for every move played so far
@@ -445,12 +473,21 @@ public class TreeBot {
         }
 
         // Computes the best move given some amount of computation time
-        public int findBestMove(double time) {
+        public int findBestMoveInTime(double time) {
             long start = System.nanoTime();
 
             // Call expand() as long as we have time
             while (System.nanoTime() - start < time * 1000000000) expand();
 
+            return getBestMove();
+        }
+
+        public int findBestMoveInIterations(long iterations) {
+            while (iterations-- > 0) expand();
+            return getBestMove();
+        }
+
+        private int getBestMove() {
             // Select the move with the highest number of samples
             int bestScore = -1;
             int bestMove = state.remainingMoves[0];
@@ -466,7 +503,6 @@ public class TreeBot {
                     }
                 }
             }
-
             return bestMove;
         }
 

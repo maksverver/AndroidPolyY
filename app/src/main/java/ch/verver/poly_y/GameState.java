@@ -3,6 +3,7 @@ package ch.verver.poly_y;
 import androidx.annotation.CheckResult;
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /** Immutable representation of a Poly-Y game in progress. */
@@ -181,6 +182,18 @@ public final class GameState {
         newMoves[moves.length] = v.id;
 
         return new GameState(geometry, canSwap, newMoves);
+    }
+
+    public ArrayList<Integer> getCodeCupMoves() {
+        ArrayList<Integer> res = new ArrayList<>();
+        for (int i = 0; i < moves.length; ++i) {
+            if (i == 1 && moves[1] == moves[0]) {
+                res.add(-1);  // Swap
+            } else {
+                res.add(geometry.vertexIdToCodeCupId(moves[i]));
+            }
+        }
+        return res;
     }
 
     @Override

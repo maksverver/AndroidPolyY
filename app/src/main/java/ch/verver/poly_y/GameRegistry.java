@@ -9,10 +9,10 @@ import androidx.annotation.Nullable;
 import java.util.Objects;
 
 public class GameRegistry {
+    private static final String TAG = "GameRegistry";
     private static final String SHARED_PREFERENCES_NAME = "poly_y_prefs";
     private static final String CURRENT_GAME_KEY = "current_game";
 
-    private final static String TAG = "GameRegistry";
     private static @Nullable GameRegistry instance;
 
     private final SharedPreferences sharedPreferences;

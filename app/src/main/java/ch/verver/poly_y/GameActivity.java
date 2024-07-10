@@ -6,13 +6,17 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import androidx.annotation.MainThread;
+
 public class GameActivity extends Activity {
     private static final String TAG = "GameActivity";
 
     private GameRegistry gameRegistry;
     private GameView gameView;
     private Button confirmButton;
+    private Button hintButton;
     private GameStateWithSelection state;
+    private boolean hintInProgress = false;
 
     private final GameView.FieldClickListener fieldClickListener = (BoardGeometry.Vertex v) -> {
         // TODO: only toggle selection if it is the player's turn!
@@ -21,11 +25,19 @@ public class GameActivity extends Activity {
         }
     };
 
+    @MainThread
     private void changeState(GameStateWithSelection newState) {
         state = newState;
         gameView.setGameState(state);
         confirmButton.setEnabled(state.selection != null);
+        updateHintButton();
         gameRegistry.saveCurrentGameState(state.gameState);
+    }
+
+    @MainThread
+    private void updateHintButton() {
+        // TODO: only enable when it's my turn!
+        hintButton.setEnabled(!state.gameState.isGameOver() && state.selection == null && !hintInProgress);
     }
 
     @Override
@@ -60,6 +72,23 @@ public class GameActivity extends Activity {
             } else {
                 changeState(new GameStateWithSelection(state.gameState.move(state.selection)));
             }
+        });
+        hintButton = findViewById(R.id.hintButton);
+        hintButton.setOnClickListener((View unused) -> {
+            hintButton.setEnabled(false);
+            hintInProgress = true;
+            final GameState originalGameState = state.gameState;
+            AiManager.getInstance().requestAiMove(originalGameState, AiConfig.HINT_CONFIG, (move, unusedProbability) -> {
+                runOnUiThread(() -> {
+                    hintInProgress = false;
+                    if (!originalGameState.equals(state.gameState)) {
+                        Log.w(TAG, "Game state has changed! Ignorning AI hint.");
+                        updateHintButton();
+                    } else {
+                        changeState(state.setSelection(move));
+                    }
+                });
+            });
         });
 
         gameRegistry = GameRegistry.getInstance(getApplicationContext());

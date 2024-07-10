@@ -62,15 +62,15 @@ public final class BoardGeometry {
                 double x2 = Math.cos(a2);
                 double y2 = Math.sin(a2);
                 // (x3, y3) is the point on side of the polygon corresponding to `index`
-                double x3 = ((size - index)*x1 + index*x2)/boardSize;
-                double y3 = ((size - index)*y1 + index*y2)/boardSize;
+                double x3 = ((size - index) * x1 + index * x2) / boardSize;
+                double y3 = ((size - index) * y1 + index * y2) / boardSize;
                 // (x4, y4) is the point on a circle with 5*size points spread around evenly.
                 double a4 = 1.0 * (side * size + index) / (sides * size) * 2 * Math.PI - Math.PI / 2;
-                double x4 = Math.cos(a4)*((double) size / boardSize);
-                double y4 = Math.sin(a4)*((double) size / boardSize);
+                double x4 = Math.cos(a4) * ((double) size / boardSize);
+                double y4 = Math.sin(a4) * ((double) size / boardSize);
                 // the final point (x, y) is calculated as a weighted average of (x3, y3) and (x4, y4)
-                x = (1 - roundness)*x3 + roundness*x4;
-                y = (1 - roundness)*y3 + roundness*y4;
+                x = (1 - roundness) * x3 + roundness * x4;
+                y = (1 - roundness) * y3 + roundness * y4;
             }
             int sidesMask = 0;
             if (size + 1 == boardSize) {
@@ -89,12 +89,12 @@ public final class BoardGeometry {
     }
 
     public static class Edge {
+        public final Vertex v, w;
+
         Edge(Vertex v, Vertex w) {
             this.v = v;
             this.w = w;
         }
-
-        public final Vertex v, w;
 
         @NonNull
         @Override
@@ -136,7 +136,7 @@ public final class BoardGeometry {
         this.boardSize = boardSize;
         this.sides = sides;
 
-        int vertexCount = 1 + sides*(boardSize - 1)*boardSize/2;
+        int vertexCount = 1 + sides * (boardSize - 1) * boardSize / 2;
         ArrayList<Vertex> vertices = new ArrayList<>(vertexCount);
         vertices.add(Vertex.create(0, 0, 0, 0, boardSize, sides));
 
@@ -151,7 +151,7 @@ public final class BoardGeometry {
             throw new RuntimeException("Unexpected number of vertices (" + vertices.size() + " instead of " + vertexCount + ")");
         }
 
-        int edgeCount = sides*(boardSize - 1)*(3*boardSize - 2)/2;
+        int edgeCount = sides * (boardSize - 1) * (3 * boardSize - 2) / 2;
         ArrayList<Edge> edges = new ArrayList<>(edgeCount);
         int vertexId = 1;
         for (int size = 1; size < boardSize; ++size) {
@@ -222,14 +222,6 @@ public final class BoardGeometry {
         }
     }
 
-    Vertex codeCupIdToVertex(int codeCupId) {
-        return vertices.get(inverseCodeCupIds[codeCupId - 1]);
-    }
-
-    int vertexToCodeCupId(Vertex v) {
-        return codeCupIds[v.id] + 1;
-    }
-
     // Assumes 0 <= size, 0 <= side < sides, 0 <= index <= side.
     static private int coordsToId(int size, int side, int index, int sides) {
         if (size < 0) throw new IllegalArgumentException();
@@ -243,7 +235,19 @@ public final class BoardGeometry {
         if (side >= sides) {
             side %= sides;
         }
-        return 1 + sides*(size - 1)*size/2 + size*side + index;
+        return 1 + sides * (size - 1) * size / 2 + size * side + index;
+    }
+
+    public Vertex codeCupIdToVertex(int codeCupId) {
+        return vertices.get(inverseCodeCupIds[codeCupId - 1]);
+    }
+
+    public int vertexToCodeCupId(Vertex v) {
+        return vertexIdToCodeCupId(v.id);
+    }
+
+    public int vertexIdToCodeCupId(int vertexId) {
+        return codeCupIds[vertexId] + 1;
     }
 
     @Override
@@ -256,6 +260,6 @@ public final class BoardGeometry {
 
     @Override
     public int hashCode() {
-        return sides + 31*boardSize;
+        return sides + 31 * boardSize;
     }
 }

@@ -28,7 +28,12 @@ public final class GameStateWithSelection {
 
     @CheckResult
     GameStateWithSelection toggleSelection(BoardGeometry.Vertex v) {
-        return new GameStateWithSelection(gameState, v.equals(selection) ? null : v);
+        return setSelection(v.equals(selection) ? null : v);
+    }
+
+    @CheckResult
+    GameStateWithSelection setSelection(@Nullable BoardGeometry.Vertex v) {
+        return Objects.equals(v, selection) ? this : new GameStateWithSelection(gameState, v);
     }
 
     @Override

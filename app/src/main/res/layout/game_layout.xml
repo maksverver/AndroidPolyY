@@ -24,10 +24,17 @@
             android:textSize="20sp" />
 
         <Button
+            android:id="@+id/hintButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="10"
+            android:text="Hint" />
+
+        <Button
             android:id="@+id/confirmButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_weight="10"
             android:enabled="false"
             android:text="Confirm" />
     </LinearLayout>
