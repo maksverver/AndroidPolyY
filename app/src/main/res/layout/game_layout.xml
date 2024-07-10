@@ -11,18 +11,6 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="10"
-            android:lines="1"
-            android:maxLines="100"
-            android:text="Hello World!"
-            android:textAlignment="center"
-            android:textColor="@color/white"
-            android:textSize="20sp" />
-
         <Button
             android:id="@+id/hintButton"
             android:layout_width="wrap_content"
@@ -37,6 +25,7 @@
             android:layout_weight="10"
             android:enabled="false"
             android:text="Confirm" />
+
     </LinearLayout>
 
     <ch.verver.poly_y.GameView
@@ -45,4 +34,16 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:padding="16dp" />
+
+    <TextView
+        android:id="@+id/statusTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:lines="1"
+        android:maxLines="100"
+        android:text="Hello World!"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textSize="20sp" />
+
 </LinearLayout>

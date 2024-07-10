@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.annotation.MainThread;
 
@@ -12,9 +13,10 @@ public class GameActivity extends Activity {
     private static final String TAG = "GameActivity";
 
     private GameRegistry gameRegistry;
-    private GameView gameView;
-    private Button confirmButton;
+    private TextView statusTextView;
     private Button hintButton;
+    private Button confirmButton;
+    private GameView gameView;
     private GameStateWithSelection state;
     private boolean hintInProgress = false;
 
@@ -31,7 +33,23 @@ public class GameActivity extends Activity {
         gameView.setGameState(state);
         confirmButton.setEnabled(state.selection != null);
         updateHintButton();
+        statusTextView.setText(getStatusText(state.gameState));
         gameRegistry.saveCurrentGameState(state.gameState);
+    }
+
+    private static String getStatusText(GameState gameState) {
+        switch (gameState.getNextPlayer()) {
+            case 0:
+                switch (gameState.getWinner()) {
+                    case 0: return "It's a tie!";
+                    case 1: return "Player 1 (red) won!";
+                    case 2: return "Player 2 (red) won!";
+                    default: return "Game over (winner unknown)";
+                }
+            case 1: return "Player 1 (red) to move";
+            case 2: return "Player 2 (blue) to move";
+            default: return "Invalid game state";
+        }
     }
 
     @MainThread
@@ -62,17 +80,7 @@ public class GameActivity extends Activity {
 
         // Create the layout and connect views.
         setContentView(R.layout.game_layout);
-        gameView = findViewById(R.id.gameView);
-        confirmButton = findViewById(R.id.confirmButton);
-        confirmButton.setOnClickListener((View unused) -> {
-            if (state.selection == null) {
-                Log.w(TAG, "Confirm button clicked but no selection active!");
-            } else if (!state.gameState.isValidMove(state.selection)) {
-                Log.w(TAG, "Selected move is not valid!");
-            } else {
-                changeState(new GameStateWithSelection(state.gameState.move(state.selection)));
-            }
-        });
+        statusTextView = findViewById(R.id.statusTextView);
         hintButton = findViewById(R.id.hintButton);
         hintButton.setOnClickListener((View unused) -> {
             hintButton.setEnabled(false);
@@ -90,6 +98,17 @@ public class GameActivity extends Activity {
                 });
             });
         });
+        confirmButton = findViewById(R.id.confirmButton);
+        confirmButton.setOnClickListener((View unused) -> {
+            if (state.selection == null) {
+                Log.w(TAG, "Confirm button clicked but no selection active!");
+            } else if (!state.gameState.isValidMove(state.selection)) {
+                Log.w(TAG, "Selected move is not valid!");
+            } else {
+                changeState(new GameStateWithSelection(state.gameState.move(state.selection)));
+            }
+        });
+        gameView = findViewById(R.id.gameView);
 
         gameRegistry = GameRegistry.getInstance(getApplicationContext());
         GameState gameState = overrideGameState != null ? overrideGameState : gameRegistry.getCurrentGameState();
