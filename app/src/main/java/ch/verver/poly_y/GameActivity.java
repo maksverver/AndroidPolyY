@@ -47,18 +47,37 @@ public class GameActivity extends Activity {
     }
 
     private String getStatusText(GameState gameState) {
+        String p1 = getString(
+                aiPlayer == 0 ? R.string.game_status_name_player_1 :
+                        aiPlayer == 1 ? R.string.game_status_name_ai : R.string.game_status_name_player)
+                + " (" + getString(R.string.game_status_color_player_1) + ")";
+        String p2 = getString(
+                aiPlayer == 0 ? R.string.game_status_name_player_2 :
+                        aiPlayer == 2 ? R.string.game_status_name_ai : R.string.game_status_name_player)
+                + " (" + getString(R.string.game_status_color_player_2) + ")";
+
         switch (gameState.getNextPlayer()) {
             case 0:
-                // TODO: show different message if player resigned.
+                // Game is over
                 switch (gameState.getWinner()) {
-                    case 0: return getString(R.string.game_status_tied);
-                    case 1: return getString(R.string.game_status_player_1_won);
-                    case 2: return getString(R.string.game_status_player_2_won);
+                    case 0:
+                        return getString(R.string.game_status_tied);
+                    case 1:
+                        return gameState.isResigned() ?
+                            p2 + " " + getString(R.string.game_status_resigned) :
+                            p1 + " " + getString(R.string.game_status_won);
+                    case 2:
+                        return gameState.isResigned() ?
+                            p1 + " " + getString(R.string.game_status_resigned) :
+                            p2 + " " + getString(R.string.game_status_won);
                     default: return getString(R.string.game_status_game_over);
                 }
-            case 1: return getString(R.string.game_status_player_1_to_move);
-            case 2: return getString(R.string.game_status_player_2_to_move);
-            default: return getString(R.string.game_status_invalid_state);
+            case 1:
+                return p1 + " " + getString(R.string.game_status_to_move);
+            case 2:
+                return p2 + " " + getString(R.string.game_status_to_move);
+            default:
+                return getString(R.string.game_status_invalid_state);
         }
     }
 

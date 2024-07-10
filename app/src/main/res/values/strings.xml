@@ -1,11 +1,16 @@
 <resources>
     <string name="app_name">Poly-Y</string>
     <string name="game_status_tied">It\'s a tie!</string>
-    <string name="game_status_player_1_won">Player 1 (red) won!</string>
-    <string name="game_status_player_2_won">Player 2 (blue) won!</string>
+    <string name="game_status_name_player">Player</string>
+    <string name="game_status_name_ai">AI</string>
+    <string name="game_status_name_player_1">Player 1</string>
+    <string name="game_status_name_player_2">Player 2</string>
+    <string name="game_status_color_player_1">red</string>
+    <string name="game_status_color_player_2">blue</string>
+    <string name="game_status_won">won!</string>
+    <string name="game_status_resigned">resigned</string>
+    <string name="game_status_to_move">to move</string>
     <string name="game_status_game_over">Game over (winner unknown)</string>
-    <string name="game_status_player_1_to_move">Player 1 (red) to move</string>
-    <string name="game_status_player_2_to_move">Player 2 (blue) to move</string>
     <string name="game_status_invalid_state">Invalid game state</string>
     <string name="game_button_resign">Resign</string>
     <string name="game_button_back">Back</string>
