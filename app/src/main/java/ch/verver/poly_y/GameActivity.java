@@ -37,18 +37,18 @@ public class GameActivity extends Activity {
         gameRegistry.saveCurrentGameState(state.gameState);
     }
 
-    private static String getStatusText(GameState gameState) {
+    private String getStatusText(GameState gameState) {
         switch (gameState.getNextPlayer()) {
             case 0:
                 switch (gameState.getWinner()) {
-                    case 0: return "It's a tie!";
-                    case 1: return "Player 1 (red) won!";
-                    case 2: return "Player 2 (red) won!";
-                    default: return "Game over (winner unknown)";
+                    case 0: return getString(R.string.game_status_tied);
+                    case 1: return getString(R.string.game_status_player_1_won);
+                    case 2: return getString(R.string.game_status_player_2_won);
+                    default: return getString(R.string.game_status_game_over);
                 }
-            case 1: return "Player 1 (red) to move";
-            case 2: return "Player 2 (blue) to move";
-            default: return "Invalid game state";
+            case 1: return getString(R.string.game_status_player_1_to_move);
+            case 2: return getString(R.string.game_status_player_2_to_move);
+            default: return getString(R.string.game_status_invalid_state);
         }
     }
 
@@ -82,33 +82,11 @@ public class GameActivity extends Activity {
         setContentView(R.layout.game_layout);
         statusTextView = findViewById(R.id.statusTextView);
         hintButton = findViewById(R.id.hintButton);
-        hintButton.setOnClickListener((View unused) -> {
-            hintButton.setEnabled(false);
-            hintInProgress = true;
-            final GameState originalGameState = state.gameState;
-            AiManager.getInstance().requestAiMove(originalGameState, AiConfig.HINT_CONFIG, (move, unusedProbability) -> {
-                runOnUiThread(() -> {
-                    hintInProgress = false;
-                    if (!originalGameState.equals(state.gameState)) {
-                        Log.w(TAG, "Game state has changed! Ignorning AI hint.");
-                        updateHintButton();
-                    } else {
-                        changeState(state.setSelection(move));
-                    }
-                });
-            });
-        });
         confirmButton = findViewById(R.id.confirmButton);
-        confirmButton.setOnClickListener((View unused) -> {
-            if (state.selection == null) {
-                Log.w(TAG, "Confirm button clicked but no selection active!");
-            } else if (!state.gameState.isValidMove(state.selection)) {
-                Log.w(TAG, "Selected move is not valid!");
-            } else {
-                changeState(new GameStateWithSelection(state.gameState.move(state.selection)));
-            }
-        });
+        hintButton.setOnClickListener(this::onHintButtonClick);
+        confirmButton.setOnClickListener(this::onConfirmButtonClick);
         gameView = findViewById(R.id.gameView);
+        gameView.addFieldClickListener(fieldClickListener);
 
         gameRegistry = GameRegistry.getInstance(getApplicationContext());
         GameState gameState = overrideGameState != null ? overrideGameState : gameRegistry.getCurrentGameState();
@@ -120,15 +98,30 @@ public class GameActivity extends Activity {
         changeState(new GameStateWithSelection(gameState));
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        gameView.addFieldClickListener(fieldClickListener);
+    private void onHintButtonClick(View unusedView) {
+        hintButton.setEnabled(false);
+        hintInProgress = true;
+        final GameState originalGameState = state.gameState;
+        AiManager.getInstance().requestAiMove(originalGameState, AiConfig.HINT_CONFIG, (move, unusedProbability) -> {
+            runOnUiThread(() -> {
+                hintInProgress = false;
+                if (!originalGameState.equals(state.gameState)) {
+                    Log.w(TAG, "Game state has changed! Ignoring AI hint.");
+                    updateHintButton();
+                } else {
+                    changeState(state.setSelection(move));
+                }
+            });
+        });
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        gameView.removeFieldClickListener(fieldClickListener);
+    private void onConfirmButtonClick(View unusedView) {
+        if (state.selection == null) {
+            Log.w(TAG, "Confirm button clicked but no selection active!");
+        } else if (!state.gameState.isValidMove(state.selection)) {
+            Log.w(TAG, "Selected move is not valid!");
+        } else {
+            changeState(new GameStateWithSelection(state.gameState.move(state.selection)));
+        }
     }
 }

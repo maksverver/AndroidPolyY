@@ -16,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="10"
-            android:text="Hint" />
+            android:text="@string/game_button_hint" />
 
         <Button
             android:id="@+id/confirmButton"
@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="10"
             android:enabled="false"
-            android:text="Confirm" />
+            android:text="@string/game_button_confirm" />
 
     </LinearLayout>
 
