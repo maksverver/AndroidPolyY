@@ -10,20 +10,22 @@ public final class GameState {
     private static final int[] NO_MOVES = new int[0];
 
     public static final GameState DUMMY_GAME_STATE =
-            new GameState(BoardGeometry.DUMMY_GEOMETRY, NO_MOVES);
+            new GameState(BoardGeometry.DUMMY_GEOMETRY, false, NO_MOVES);
 
     public static final GameState DEFAULT_GAME_STATE =
-            new GameState(BoardGeometry.DEFAULT_GEOMETRY, NO_MOVES);
+            new GameState(BoardGeometry.DEFAULT_GEOMETRY, true, NO_MOVES);
 
     private final BoardGeometry geometry;
+    private final boolean canSwap;
     private final int[] moves;
     private final byte[] pieces;
     private final byte[] cornerWinners;  // per corner, id of player that captured it
     private final byte[] scores;  // number of captured corners, per player
     private final int winner;
 
-    private GameState(BoardGeometry geometry, int[] moves) {
+    private GameState(BoardGeometry geometry, boolean canSwap, int[] moves) {
         this.geometry = geometry;
+        this.canSwap = canSwap;
         this.moves = moves;
         this.pieces = new byte[geometry.vertices.size()];
         this.cornerWinners = new byte[geometry.sides];
@@ -94,9 +96,14 @@ public final class GameState {
         winner = 0;
     }
 
-    /** Creates an empty board with the given geometry, and player 1 to move. */
+    /** Creates an empty board with the given geometry, player 1 to move, and the pie-rule in effect. */
     public static GameState createInitial(BoardGeometry geometry) {
-        return new GameState(geometry, NO_MOVES);
+        return createInitial(geometry, true);
+    }
+
+    /** Creates an empty board with the given geometry, and player 1 to move. */
+    public static GameState createInitial(BoardGeometry geometry, boolean canSwap) {
+        return new GameState(geometry, canSwap, NO_MOVES);
     }
 
     public BoardGeometry getGeometry() {
@@ -121,6 +128,15 @@ public final class GameState {
     /** Returns the color of the piece on the field; either 1 or 2, or 0 if empty. */
     public int getPiece(BoardGeometry.Vertex v) {
         return pieces[v.id];
+    }
+
+    /**
+     * Returns whether it's possible to swap with the opponent's first move, which is true if this
+     * is the second move, and the pie rule is in effect. The first move can be retrieved by
+     * {@link #getLastMove()}.
+     */
+    public boolean canSwap() {
+        return canSwap && this.moves.length == 1;
     }
 
     /**
@@ -153,7 +169,7 @@ public final class GameState {
 
     public boolean isValidMove(BoardGeometry.Vertex v) {
         if (getNextPlayer() == 0) return false;
-        return moves.length < 2 || pieces[v.id] == 0;
+        return pieces[v.id] == 0 || canSwap();
     }
 
     @CheckResult
@@ -164,7 +180,7 @@ public final class GameState {
         System.arraycopy(moves, 0, newMoves, 0, moves.length);
         newMoves[moves.length] = v.id;
 
-        return new GameState(geometry, newMoves);
+        return new GameState(geometry, canSwap, newMoves);
     }
 
     @Override
@@ -183,7 +199,7 @@ public final class GameState {
     /**
      * Encodes the game state as a string that consists of comma-separated integers.
      *
-     * <p>The format is: "version,boardSize,sides,moveCount,move1,move2,..,moveN", where version is
+     * <p>The format is: "version,boardSize,sides,pieRule,moveCount,move1,move2,..,moveN", where version is
      * currently 1.
      */
     public String encodeAsString() {
@@ -193,6 +209,8 @@ public final class GameState {
         sb.append(geometry.boardSize);
         sb.append(',');
         sb.append(geometry.sides);
+        sb.append(',');
+        sb.append(canSwap ? 1 : 0);
         sb.append(',');
         sb.append(moves.length);
         for (int move : moves) {
@@ -216,16 +234,18 @@ public final class GameState {
         for (int i = 0; i < parts.length; ++i) {
             ints[i] = Integer.parseInt(parts[i]);
         }
-        if (ints.length < 4) throw new IllegalArgumentException("Not enough parts");
+        if (ints.length < 5) throw new IllegalArgumentException("Not enough parts");
         int version = ints[0];
         if (version != 1) throw new IllegalArgumentException("Unsupported version number: " + version);
         int boardSize = ints[1];
         int sides = ints[2];
-        int moveCount = ints[3];
-        if (ints.length != moveCount + 4) throw new IllegalArgumentException("Invalid move count: " + moveCount);
+        int canSwap = ints[3];
+        int moveCount = ints[4];
+        if (ints.length != moveCount + 5) throw new IllegalArgumentException("Invalid move count: " + moveCount);
         return new GameState(
                 new BoardGeometry(boardSize, sides),
-                Arrays.copyOfRange(ints, 4, moveCount + 4));
+                canSwap != 0,
+                Arrays.copyOfRange(ints, 5, moveCount + 5));
     }
 
     private static boolean hasAtLeast3Bits(int x) {

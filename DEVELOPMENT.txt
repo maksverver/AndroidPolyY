@@ -1,7 +1,7 @@
 GameActivity accepts intent extras to override the game state, which is useful for testing.
 Example:
 
-% adb shell am start-activity ch.verver.poly_y/.GameActivity -es override_game_state "1,7,5,0"
+% adb shell am start-activity -n ch.verver.poly_y/.GameActivity --es override_game_state "1,7,5,1,0" -S
 
 The game state strings can be found in the SharedPreferences file, and are also logged to logcat:
 
@@ -10,7 +10,7 @@ The game state strings can be found in the SharedPreferences file, and are also 
 
 To benchmark the AI on the phone:
 
-% adb shell am start-activity -n ch.verver.poly_y/.BenchmarkActivity -el duration_ms 5000
+% adb shell am start-activity -n ch.verver.poly_y/.BenchmarkActivity --el duration_ms 5000 -S
 
 (The duration_ms extra is optional.)
 
