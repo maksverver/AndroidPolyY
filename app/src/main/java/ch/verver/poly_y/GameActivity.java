@@ -8,6 +8,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.MainThread;
+import androidx.annotation.Nullable;
 
 public class GameActivity extends Activity {
     private static final String TAG = "GameActivity";
@@ -19,10 +20,12 @@ public class GameActivity extends Activity {
     private GameView gameView;
     private GameStateWithSelection state;
     private boolean hintInProgress = false;
+    private boolean aiInProgress = false;
+    private int aiPlayer = 1;  // TODO: make customizable
+    private @Nullable AiConfig aiConfig = AiConfig.HINT_CONFIG;  // TODO: make customizable
 
     private final GameView.FieldClickListener fieldClickListener = (BoardGeometry.Vertex v) -> {
-        // TODO: only toggle selection if it is the player's turn!
-        if (state.gameState.isValidMove(v)) {
+        if (!aiInProgress && state.gameState.isValidMove(v)) {
             changeState(state.toggleSelection(v));
         }
     };
@@ -32,9 +35,11 @@ public class GameActivity extends Activity {
         state = newState;
         gameView.setGameState(state);
         confirmButton.setEnabled(state.selection != null);
-        updateHintButton();
         statusTextView.setText(getStatusText(state.gameState));
         gameRegistry.saveCurrentGameState(state.gameState);
+        maybeTriggerAiMove();
+        // Do this last, because hint button is disabled when AI is in progress.
+        updateHintButton();
     }
 
     private String getStatusText(GameState gameState) {
@@ -54,8 +59,30 @@ public class GameActivity extends Activity {
 
     @MainThread
     private void updateHintButton() {
-        // TODO: only enable when it's my turn!
-        hintButton.setEnabled(!state.gameState.isGameOver() && state.selection == null && !hintInProgress);
+        hintButton.setEnabled(!state.gameState.isGameOver() && !hintInProgress && !aiInProgress);
+    }
+
+    private void maybeTriggerAiMove() {
+        if (aiPlayer == 0 || aiConfig == null || aiInProgress) return;
+        final GameState originalGameState = state.gameState;
+        if (originalGameState.getNextPlayer() == aiPlayer) {
+            long start = System.currentTimeMillis();
+            aiInProgress = true;
+            AiManager.getInstance().requestAiMove(originalGameState, aiConfig, (move, unusedProbability) -> {
+                runOnUiThread(() -> {
+                    aiInProgress = false;
+                    long duration = System.currentTimeMillis() - start;
+                    Log.i(TAG, "AI selected move " + move.id + " in " + duration + " ms");
+                    if (!originalGameState.equals(state.gameState)) {
+                        // This should not happen normally; but just to be sure.
+                        Log.w(TAG, "Game state has changed! ");
+                        maybeTriggerAiMove();
+                    } else {
+                        changeState(new GameStateWithSelection(state.gameState.move(move)));
+                    }
+                });
+            });
+        }
     }
 
     @Override

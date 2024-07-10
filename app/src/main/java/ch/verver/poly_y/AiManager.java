@@ -37,6 +37,9 @@ public class AiManager {
         if (gameState.isGameOver()) {
             throw new IllegalArgumentException("Game must not be over!");
         }
+        if (!BoardGeometry.DEFAULT_GEOMETRY.equals(gameState.getGeometry())) {
+            throw new IllegalArgumentException("Geometry not supported by AI!");
+        }
         executor.submit(() -> {
             BoardGeometry geometry = gameState.getGeometry();
             double winProbability = 0.5;
@@ -60,7 +63,6 @@ public class AiManager {
             } catch (Throwable t) {
                 Log.e(TAG, "callback failed", t);
             }
-            return true;
         });
     }
 }
