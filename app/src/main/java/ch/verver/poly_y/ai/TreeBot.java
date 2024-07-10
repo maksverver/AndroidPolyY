@@ -157,19 +157,23 @@ public class TreeBot {
         Object[] root = OpeningBook.openingBook;
 
         // Recursively go through the opening book for every move played so far
-        for (int i = 0; i < moves.size() && root != null; i++) {
+        for (int move : moves) {
+            if (move == -1) {
+                continue;  // swap
+            }
             if (root.length > 1) {
                 // There is a child opening book, update the root to this child
-                root = (Object[]) root[moves.get(i)];
+                root = (Object[]) root[move];
             } else {
                 // There is no child opening book, the move sequence is not in the opening book and we are done
                 root = null;
             }
+            if (root == null) {
+                return 0;
+            }
         }
 
-        if (root != null)
-            return (Integer) root[0];    // The move sequence is in the opening book, return the move from the opening book
-        return 0;                                    // The move sequence is not in the opening book, return 0
+        return (Integer) root[0];    // The move sequence is in the opening book, return the move from the opening book
     }
 
     // This class encodes a game state

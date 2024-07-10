@@ -2,6 +2,7 @@ package ch.verver.poly_y;
 
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -42,21 +43,25 @@ public class AiManager {
         }
         executor.submit(() -> {
             BoardGeometry geometry = gameState.getGeometry();
-            double winProbability = 0.5;
             BoardGeometry.Vertex lastMove = gameState.getLastMove();
-            BoardGeometry.Vertex bestMove;
+            final BoardGeometry.Vertex bestMove;
+            double winProbability = 0.5;  // unknown probability
             if (lastMove != null && gameState.canSwap() &&
                     TreeBot.shouldSwap(geometry.vertexToCodeCupId(lastMove))) {
                 bestMove = lastMove;
             } else {
-                // Note: we create a new bot for each request, instead of updating the game state. This
-                // reduces performance, since we cannot reuse information from a subtree, but it makes
-                // the code simpler and the performance more consistent.
-                // TODO: opening book support!
-                // TODO: calculate winProbability too
-                TreeBot treeBot = new TreeBot();
-                bestMove = geometry.codeCupIdToVertex(
-                        treeBot.findBestMoveInIterations(gameState.getCodeCupMoves(), config.iterations));
+                ArrayList<Integer> ccMovesPlayed = gameState.getCodeCupMoves();
+                int ccMove = config.openingBook ? TreeBot.getOpeningMove(ccMovesPlayed) : 0;
+                if (ccMove == 0) {
+                    // No opening book move. Run the MCTS algorithm to find a good move.
+                    //
+                    // Note: we create a new tree from scratch every time, instead of reusing the
+                    // subtree from the previous move. This reduces play strength slightly, because
+                    // we cannot reuse information from a subtree, but it makes the code simpler.
+                    ccMove = new TreeBot().findBestMoveInIterations(ccMovesPlayed, config.iterations);
+                    winProbability = 0.5;  // TODO!
+                }
+                bestMove = geometry.codeCupIdToVertex(ccMove);
             }
             try {
                 callback.onAiMove(bestMove, winProbability);
