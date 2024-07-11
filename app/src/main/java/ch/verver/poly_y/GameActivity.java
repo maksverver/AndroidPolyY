@@ -20,11 +20,12 @@ public class GameActivity extends Activity {
     private Button hintButton;
     private Button confirmButton;
     private GameView gameView;
+
+    private int aiPlayer = 0;
+    private @Nullable AiConfig aiConfig = null;
     private GameStateWithSelection state;
     private boolean hintInProgress = false;
     private boolean aiInProgress = false;
-    private int aiPlayer = 0;
-    private @Nullable AiConfig aiConfig = null;
 
     @MainThread
     private void changeState(GameStateWithSelection newState) {
@@ -121,34 +122,42 @@ public class GameActivity extends Activity {
 
         gameRegistry = GameRegistry.getInstance(this);
 
-        // Support overriding the application state using extras passed in the intent that launched
-        // the activity. This is useful for debugging (see DEVELOPMENT.txt).
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-            String gameStateString = extras.getString("override_game_state");
-            if (gameStateString != null) {
-                try {
-                    changeState(new GameStateWithSelection(GameState.decodeFromString(gameStateString)));
-                    Log.i(TAG, "Overriding game state from intent extra!");
-                } catch (Exception e) {
-                    Log.e(TAG, "Could not parse game state string; skipping game state override.", e);
-                }
-            }
+        // This check is necessary to avoid resetting the game state every time the activity is
+        // recreated, e.g. when the screen orientation changes.
+        if (savedInstanceState == null) {
+            processIntent();
         }
 
-        // state != null only if we've initialized the game state from the Intent extras above.
-        if (state == null) {
-            aiPlayer = gameRegistry.getCurrentGameAiPlayer();
-            aiConfig = gameRegistry.getCurrentGameAiConfig();
-            GameState gameState = gameRegistry.getCurrentGameState();
-            if (gameState == null || (aiPlayer != 0 && aiConfig == null)) {
-                Log.w(TAG, "Invalid game configuration!");
-                startActivity(new Intent(this, MainActivity.class));
-                finish();
-                return;
-            }
-            changeState(new GameStateWithSelection(gameState));
+        aiPlayer = gameRegistry.getCurrentGameAiPlayer();
+        aiConfig = gameRegistry.getCurrentGameAiConfig();
+        GameState gameState = gameRegistry.getCurrentGameState();
+        if (gameState == null || (aiPlayer != 0 && aiConfig == null)) {
+            Log.w(TAG, "Invalid game configuration!");
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+            return;
         }
+        changeState(new GameStateWithSelection(gameState));
+    }
+
+    /**
+     * Overrides the game state with one passed as an intent extra. This is useful for debugging
+     * (see DEVELOPMENT.txt).
+     */
+    private void processIntent() {
+        Bundle extras = getIntent().getExtras();
+        if (extras == null) return;
+        String gameStateString = extras.getString("override_game_state");
+        if (gameStateString == null) return;
+        final GameState gameState;
+        try {
+            gameState = GameState.decodeFromString(gameStateString);
+        } catch (Exception e) {
+            Log.e(TAG, "Could not parse game state string; skipping game state override.", e);
+            return;
+        }
+        Log.i(TAG, "Overriding game state from intent extra.");
+        gameRegistry.startGame(gameState, 0, null, false);
     }
 
     private void onResignButtonClick(View unusedView) {
