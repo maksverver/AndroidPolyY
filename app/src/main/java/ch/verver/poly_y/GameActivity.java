@@ -25,12 +25,6 @@ public class GameActivity extends Activity {
     private int aiPlayer = 1;  // TODO: make customizable
     private @Nullable AiConfig aiConfig = AiConfig.HINT_CONFIG;  // TODO: make customizable
 
-    private final GameView.FieldClickListener fieldClickListener = (BoardGeometry.Vertex v) -> {
-        if (!aiInProgress && state.gameState.isValidMove(v)) {
-            changeState(state.toggleSelection(v));
-        }
-    };
-
     @MainThread
     private void changeState(GameStateWithSelection newState) {
         state = newState;
@@ -136,7 +130,7 @@ public class GameActivity extends Activity {
         confirmButton = findViewById(R.id.confirmButton);
         confirmButton.setOnClickListener(this::onConfirmButtonClick);
         gameView = findViewById(R.id.gameView);
-        gameView.addFieldClickListener(fieldClickListener);
+        gameView.addFieldClickListener(this::onFieldClicked);
 
         gameRegistry = GameRegistry.getInstance(getApplicationContext());
         GameState gameState = overrideGameState != null ? overrideGameState : gameRegistry.getCurrentGameState();
@@ -180,6 +174,12 @@ public class GameActivity extends Activity {
             Log.w(TAG, "Selected move is not valid!");
         } else {
             changeState(new GameStateWithSelection(state.gameState.move(state.selection)));
+        }
+    }
+
+    private void onFieldClicked(BoardGeometry.Vertex v) {
+        if (!aiInProgress && state.gameState.isValidMove(v)) {
+            changeState(state.toggleSelection(v));
         }
     }
 }
