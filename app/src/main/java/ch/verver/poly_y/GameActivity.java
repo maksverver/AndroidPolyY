@@ -78,7 +78,9 @@ public class GameActivity extends Activity {
 
     @MainThread
     private void updateHintButton() {
-        hintButton.setEnabled(!state.gameState.isGameOver() && !hintInProgress && !aiInProgress);
+        hintButton.setEnabled(
+                !state.gameState.isGameOver() && !hintInProgress && !aiInProgress &&
+                BoardGeometry.DEFAULT_GEOMETRY.equals(state.gameState.getGeometry()));
     }
 
     private void maybeTriggerAiMove() {
