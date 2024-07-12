@@ -23,6 +23,7 @@ public class GameActivity extends Activity {
 
     private int aiPlayer = 0;
     private @Nullable AiConfig aiConfig = null;
+    private boolean inCampaign;
     private GameStateWithSelection state;
     private boolean hintInProgress = false;
     private boolean aiInProgress = false;
@@ -80,7 +81,7 @@ public class GameActivity extends Activity {
     @MainThread
     private void updateHintButton() {
         hintButton.setEnabled(
-                !state.gameState.isGameOver() && !hintInProgress && !aiInProgress &&
+                !inCampaign && !state.gameState.isGameOver() && !hintInProgress && !aiInProgress &&
                 BoardGeometry.DEFAULT_GEOMETRY.equals(state.gameState.getGeometry()));
     }
 
@@ -130,6 +131,7 @@ public class GameActivity extends Activity {
 
         aiPlayer = gameRegistry.getCurrentGameAiPlayer();
         aiConfig = gameRegistry.getCurrentGameAiConfig();
+        inCampaign = gameRegistry.getCurrentGameIsCampaign();
         GameState gameState = gameRegistry.getCurrentGameState();
         if (gameState == null || (aiPlayer != 0 && aiConfig == null)) {
             Log.w(TAG, "Invalid game configuration!");
