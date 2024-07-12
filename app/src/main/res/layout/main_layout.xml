@@ -30,7 +30,6 @@
                 android:id="@+id/currentLevelTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Current level: 0"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 

@@ -4,11 +4,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import androidx.annotation.CheckResult;
 import androidx.annotation.Nullable;
 
 import java.util.Objects;
 
 public class GameRegistry {
+    public static final int MIN_CAMPAIGN_LEVEL = 1;
+    public static final int MAX_CAMPAIGN_LEVEL = MIN_CAMPAIGN_LEVEL + (AiConfig.MAX_DIFFICULTY - AiConfig.MIN_DIFFICULTY + 1)*2;
+
     private static final String TAG = "GameRegistry";
     private static final String SHARED_PREFERENCES_NAME = "poly_y_prefs";
 
@@ -16,6 +20,7 @@ public class GameRegistry {
     private static final String CURRENT_GAME_AI_PLAYER_KEY = "current_game_ai_player";
     private static final String CURRENT_GAME_AI_CONFIG_KEY = "current_game_ai_config";
     private static final String CURRENT_GAME_IS_CAMPAIGN_KEY = "current_game_is_campaign";
+    private static final String CAMPAIGN_LEVEL_KEY = "current_campaign_level_key";
 
     private static @Nullable GameRegistry instance;
 
@@ -25,6 +30,7 @@ public class GameRegistry {
     private int currentGameAiPlayer;
     private @Nullable AiConfig currentGameAiConfig;
     private boolean currentGameIsCampaign;
+    private int campaignLevel;
 
     GameRegistry(Context applicationContext) {
         sharedPreferences = applicationContext.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
@@ -57,6 +63,7 @@ public class GameRegistry {
             }
         }
         currentGameIsCampaign = sharedPreferences.getBoolean(CURRENT_GAME_IS_CAMPAIGN_KEY, false);
+        campaignLevel = sharedPreferences.getInt(CAMPAIGN_LEVEL_KEY, MIN_CAMPAIGN_LEVEL);
     }
 
     public static synchronized GameRegistry getInstance(Context context) {
@@ -69,18 +76,11 @@ public class GameRegistry {
     }
 
     public synchronized void setCurrentGameState(@Nullable GameState gameState) {
-        if (Objects.equals(gameState, this.currentGameState)) {
+        if (Objects.equals(gameState, currentGameState)) {
             Log.i(TAG, "Game state unchanged; skipping save.");
             return;
         }
-        this.currentGameState = gameState;
-        if (gameState == null) {
-            sharedPreferences.edit().remove(CURRENT_GAME_STATE_KEY).apply();
-        } else {
-            String encodedGameState = gameState.encodeAsString();
-            Log.i(TAG, "Saving state: " + encodedGameState);
-            sharedPreferences.edit().putString(CURRENT_GAME_STATE_KEY, encodedGameState).apply();
-        }
+        updateGameState(currentGameState, gameState).apply();;
     }
 
     public synchronized int getCurrentGameAiPlayer() {
@@ -96,7 +96,7 @@ public class GameRegistry {
     }
 
     public synchronized void startGame(
-            GameState gameState, int aiPlayer, @Nullable AiConfig aiConfig, boolean isCampaign) {
+            GameState newGameState, int aiPlayer, @Nullable AiConfig aiConfig, boolean isCampaign) {
         if (aiPlayer < 0 || aiPlayer > 2) {
             throw new IllegalArgumentException("aiPlayer must be 0, 1 or 2");
         }
@@ -107,20 +107,64 @@ public class GameRegistry {
             throw new IllegalArgumentException("aiPlayer must be nonzero when isCampaign is true");
         }
 
-        currentGameState = gameState;
-        currentGameAiPlayer = aiPlayer;
-        currentGameAiConfig = aiConfig;
-        currentGameIsCampaign = isCampaign;
+        SharedPreferences.Editor editor = updateGameState(currentGameState, newGameState);
 
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString(CURRENT_GAME_STATE_KEY, gameState.encodeAsString());
+        currentGameAiPlayer = aiPlayer;
         editor.putInt(CURRENT_GAME_AI_PLAYER_KEY, aiPlayer);
+
+        currentGameAiConfig = aiConfig;
         if (aiConfig == null) {
             editor.remove(CURRENT_GAME_AI_CONFIG_KEY);
         } else {
             editor.putString(CURRENT_GAME_AI_CONFIG_KEY, aiConfig.encodeAsString());
         }
+
+        currentGameIsCampaign = isCampaign;
         editor.putBoolean(CURRENT_GAME_IS_CAMPAIGN_KEY, isCampaign);
+
         editor.apply();
+    }
+
+    public int getCampaignLevel() {
+        return campaignLevel;
+    }
+
+    public int getCampaignDifficulty() {
+        return AiConfig.MIN_DIFFICULTY + ((campaignLevel - MIN_CAMPAIGN_LEVEL) >> 1);
+    }
+
+    public int getCampaignAiPlayer() {
+        return ((campaignLevel - MIN_CAMPAIGN_LEVEL) & 1) + 1;
+    }
+
+    @CheckResult
+    private SharedPreferences.Editor updateGameState(@Nullable GameState oldGameState, @Nullable GameState newGameState) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        if (currentGameIsCampaign && currentGameAiPlayer != 0 &&
+                oldGameState != null && !oldGameState.isGameOver() &&
+                newGameState != null && newGameState.isGameOver()) {
+            currentGameIsCampaign = false;
+            editor.putBoolean(CURRENT_GAME_IS_CAMPAIGN_KEY, false);
+
+            int winner = newGameState.getWinner();
+            if (winner == currentGameAiPlayer) {
+                campaignLevel = Math.max(campaignLevel - 1, MIN_CAMPAIGN_LEVEL);
+            } else if (winner == GameState.otherPlayer(currentGameAiPlayer)) {
+                campaignLevel = Math.min(campaignLevel + 1, MAX_CAMPAIGN_LEVEL);
+            }
+            editor.putInt(CAMPAIGN_LEVEL_KEY, campaignLevel);
+        }
+
+        currentGameState = newGameState;
+        if (newGameState == null) {
+            Log.i(TAG, "Deleting game state");
+            editor.remove(CURRENT_GAME_STATE_KEY);
+        } else {
+            String encodedGameState = newGameState.encodeAsString();
+            Log.i(TAG, "Saving game state: " + encodedGameState);
+            editor.putString(CURRENT_GAME_STATE_KEY, encodedGameState);
+        }
+
+        return editor;
     }
 }

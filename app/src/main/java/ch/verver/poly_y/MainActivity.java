@@ -46,7 +46,10 @@ public class MainActivity extends Activity {
         setContentView(R.layout.main_layout);
 
         currentLevelTextView = findViewById(R.id.currentLevelTextView);
+        currentLevelTextView.setText(
+                getString(R.string.currentLevelTextFormat, gameRegistry.getCampaignLevel(), gameRegistry.getCampaignDifficulty()));
         startCampaignGameButton = findViewById(R.id.startCampaignGameButton);
+        startCampaignGameButton.setOnClickListener(this::onStartCampaignButtonClicked);
         pieRuleSwitch = findViewById(R.id.pieRuleSwitch);
         aiPlayerFirstButton = findViewById(R.id.aiPlayerFirstButton);
         aiPlayerSecondButton = findViewById(R.id.aiPlayerSecondButton);
@@ -58,6 +61,14 @@ public class MainActivity extends Activity {
         difficultyPicker.setValue(AiConfig.MEDIUM_DIFFICULTY);
         startCustomGameButton = findViewById(R.id.startCustomGameButton);
         startCustomGameButton.setOnClickListener(this::onStartCustomGameButtonClick);
+    }
+
+    private void onStartCampaignButtonClicked(View unused) {
+        int difficulty = gameRegistry.getCampaignDifficulty();
+        int aiPlayer = gameRegistry.getCampaignAiPlayer();
+        Log.i(TAG, "Starting campaign game with aiPlayer=" + aiPlayer + " difficulty="+ difficulty);
+        gameRegistry.startGame(GameState.DEFAULT_GAME_STATE, aiPlayer, AiConfig.fromDifficulty(difficulty), true);
+        switchToGameActivity();
     }
 
     private void onStartCustomGameButtonClick(View unused) {
