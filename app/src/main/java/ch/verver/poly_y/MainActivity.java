@@ -30,8 +30,14 @@ public class MainActivity extends Activity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // TODO: open game in progress, if there is one!
         gameRegistry = GameRegistry.getInstance(this);
+
+        // Check if there is a game to resume.
+        GameState currentGameState = gameRegistry.getCurrentGameState();
+        if (currentGameState != null && !currentGameState.isGameOver()) {
+            switchToGameActivity();
+            return;
+        }
 
         // TODO: this doesn't seem to work.
         // Force night-mode, which looks more consistent with the GameActivity.
@@ -56,13 +62,17 @@ public class MainActivity extends Activity {
 
     private void onStartCustomGameButtonClick(View unused) {
         boolean pieRule = pieRuleSwitch.isChecked();
-        GameState gameState = GameState.createInitial(BoardGeometry.DEFAULT_GEOMETRY, pieRule);
+        GameState gameState = GameState.calculate(BoardGeometry.DEFAULT_GEOMETRY, pieRule);
         int aiPlayer = aiPlayerFirstButton.isChecked() ? 1 : aiPlayerSecondButton.isChecked() ? 2 : 0;
         int difficulty = difficultyPicker.getValue();
         boolean openingBook = openingBookSwitch.isChecked();
         AiConfig aiConfig = AiConfig.fromDifficulty(difficulty, openingBook);
         Log.i(TAG, "Starting custom game with pieRule=" + pieRule + " aiPlayer=" + aiPlayer + " difficulty="+ difficulty + " openingBook=" + openingBook);
         gameRegistry.startGame(gameState, aiPlayer, aiConfig, false);
+        switchToGameActivity();
+    }
+
+    private void switchToGameActivity() {
         startActivity(new Intent(this, GameActivity.class));
         finish();
     }

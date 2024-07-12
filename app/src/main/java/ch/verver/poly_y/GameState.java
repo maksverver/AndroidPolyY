@@ -5,48 +5,58 @@ import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 /** Immutable representation of a Poly-Y game in progress. */
 public final class GameState {
     private static final int[] NO_MOVES = new int[0];
 
-    public static final GameState DUMMY_GAME_STATE =
-            new GameState(BoardGeometry.DUMMY_GEOMETRY, false, NO_MOVES);
+    public static final GameState DUMMY_GAME_STATE = calculate(BoardGeometry.DUMMY_GEOMETRY, false);
+    public static final GameState DEFAULT_GAME_STATE = calculate(BoardGeometry.DEFAULT_GEOMETRY);
 
-    public static final GameState DEFAULT_GAME_STATE =
-            new GameState(BoardGeometry.DEFAULT_GEOMETRY, true, NO_MOVES);
-
-    private final BoardGeometry geometry;
-    private final boolean canSwap;
-    private final int[] moves;
-    private final byte[] pieces;
-    private final byte[] cornerWinners;  // per corner, id of player that captured it
-    private final byte[] scores;  // number of captured corners, per player
-    private final int winner;
-
-    private GameState(BoardGeometry geometry, boolean canSwap, int[] moves) {
-        this.geometry = geometry;
-        this.canSwap = canSwap;
-        this.moves = moves;
-        this.pieces = new byte[geometry.vertices.size()];
-        this.cornerWinners = new byte[geometry.sides];
-        this.scores = new byte[3];
-
-        // Place pieces on the board, one by one.
-        {
-            int player = 1;
-            for (int move : moves) {
-                this.pieces[move] = (byte) player;
-                player = otherPlayer(player);
-            }
+    public static int otherPlayer(int player) {
+        switch (player) {
+            case 0: return 0;
+            case 1: return 2;
+            case 2: return 1;
+            default:
+                throw new IllegalArgumentException("Invalid player");
         }
+    }
 
-        // Determine which sides are captured by which players.
-        //
-        // This is calculated by flood filling all connected groups. This is a little expensive to
-        // do every time a game state is constructed, and it could be optimized with something like
-        // an immutable Union-Find data structure, but it's not really worth the trouble for now.
-        {
+    public static GameState calculate(BoardGeometry geometry) {
+        return calculate(geometry, true);
+    }
+
+    public static GameState calculate(BoardGeometry geometry, boolean canSwap) {
+        return calculate(geometry, canSwap, NO_MOVES);
+    }
+
+    public static GameState calculate(BoardGeometry geometry, boolean canSwap, int[] moves) {
+        return calculate(geometry, canSwap, moves, false);
+    }
+
+    public static GameState calculate(BoardGeometry geometry, boolean canSwap, int[] moves, boolean resigned) {
+        byte[] pieces = new byte[geometry.vertices.size()];
+        byte[] cornerWinners = new byte[geometry.sides];
+        int[] scores = new int[3];
+        int winner = 0;
+
+        if (moves.length > 0) {
+            // Place pieces on the board, one by one.
+            {
+                int player = 1;
+                for (int move : moves) {
+                    pieces[move] = (byte) player;
+                    player = otherPlayer(player);
+                }
+            }
+
+            // Determine which sides are captured by which players.
+            //
+            // This is calculated by flood filling all connected groups. This is a little expensive to
+            // do every time a game state is constructed, and it could be optimized with something like
+            // an immutable Union-Find data structure, but it's not really worth the trouble for now.
             BoardGeometry.Vertex[] queue = new BoardGeometry.Vertex[moves.length];
             boolean[] marked = new boolean[geometry.vertices.size()];
             for (BoardGeometry.Vertex v : geometry.vertices) {
@@ -91,42 +101,41 @@ public final class GameState {
         for (int player = 1; player < scores.length; ++player) {
             if (2*scores[player] > cornerWinners.length) {
                 winner = player;
-                return;
+                break;
             }
         }
-        winner = 0;
+
+        if (winner != 0 && resigned) {
+            throw new IllegalArgumentException("Player cannot resign when the game is already won!");
+        }
+
+        return new GameState(geometry, canSwap, moves, resigned, pieces, cornerWinners, scores, winner);
     }
 
-    private GameState(GameState state, int winner) {
-        geometry = state.geometry;
-        canSwap = state.canSwap;
-        moves = state.moves;
-        pieces = state.pieces;
-        cornerWinners = state.cornerWinners;
-        scores = state.scores;
+    // Input parameters
+    private final BoardGeometry geometry;
+    private final boolean canSwap;
+    private final int[] moves;
+    private final boolean resigned;
+
+    // Derived data (calculated by calculate(), ignored by equals() and hashCode())
+    private final byte[] pieces;
+    private final byte[] cornerWinners;  // per corner, id of player that captured it
+    private final int[] scores;  // number of captured corners, per player
+    private final int winner;
+
+    private GameState(
+            BoardGeometry geometry, boolean canSwap, int[] moves, boolean resigned,
+            byte[] pieces, byte[] cornerWinners, int[] scores, int winner) {
+        this.geometry = geometry;
+        this.canSwap = canSwap;
+        this.moves = moves;
+        this.resigned = resigned;
+        this.pieces = pieces;
+        this.cornerWinners = cornerWinners;
+        this.scores = scores;
         this.winner = winner;
     }
-
-    public static int otherPlayer(int player) {
-        switch (player) {
-            case 0: return 0;
-            case 1: return 2;
-            case 2: return 1;
-            default:
-                throw new IllegalArgumentException("Invalid player");
-        }
-    }
-
-    /** Creates an empty board with the given geometry, player 1 to move, and the pie-rule in effect. */
-    public static GameState createInitial(BoardGeometry geometry) {
-        return createInitial(geometry, true);
-    }
-
-    /** Creates an empty board with the given geometry, and player 1 to move. */
-    public static GameState createInitial(BoardGeometry geometry, boolean canSwap) {
-        return new GameState(geometry, canSwap, NO_MOVES);
-    }
-
     public BoardGeometry getGeometry() {
         return geometry;
     }
@@ -134,11 +143,11 @@ public final class GameState {
     public boolean isGameOver() {
         // The second condition can only happen if geometry.sides is even, and each player has
         // captured half of the corners.
-        return winner != 0 || scores[0] == 0;
+        return winner != 0 || resigned || scores[0] == 0;
     }
 
     public boolean isResigned() {
-        return winner != 0 && 2 * scores[winner] < cornerWinners.length;
+        return resigned;
     }
 
     /** Returns the next player (1 or 2), or 0 if the game is over. */
@@ -168,10 +177,10 @@ public final class GameState {
      * Returns the winner (player 1 or 2) if the game is over, or 0 if the game is not over.
      *
      * <p>If the game is over, it is possible that getWinner() returns 0 only if geometry.sides()
-     * is even, and each  player captured half of the corners.
+     * is even, and each player captured half of the corners.
      */
     public int getWinner() {
-        return winner;
+        return resigned ? 2 - (moves.length & 1)  : winner;
     }
 
     /**
@@ -205,7 +214,7 @@ public final class GameState {
         System.arraycopy(moves, 0, newMoves, 0, moves.length);
         newMoves[moves.length] = v.id;
 
-        return new GameState(geometry, canSwap, newMoves);
+        return calculate(geometry, canSwap, newMoves);
     }
 
     @CheckResult
@@ -214,7 +223,7 @@ public final class GameState {
         if (nextPlayer == 0) {
             throw new IllegalArgumentException("Cannot resign when the game is over");
         }
-        return new GameState(this, otherPlayer(nextPlayer));
+        return new GameState(geometry, canSwap, moves, true, pieces, cornerWinners, scores, winner);
     }
 
     public ArrayList<Integer> getCodeCupMoves() {
@@ -234,19 +243,22 @@ public final class GameState {
         if (obj == this) return true;
         if (!(obj instanceof GameState)) return false;
         GameState other = (GameState) obj;
-        return geometry.equals(other.geometry) && Arrays.equals(moves, other.moves);
+        return geometry.equals(other.geometry) &&
+                canSwap == other.canSwap &&
+                Arrays.equals(moves, other.moves) &&
+                resigned == other.resigned;
     }
 
     @Override
     public int hashCode() {
-        return 31 * Arrays.hashCode(moves) + geometry.hashCode();
+        return Objects.hash(geometry.hashCode(), canSwap, Arrays.hashCode(moves), resigned);
     }
 
     /**
      * Encodes the game state as a string that consists of comma-separated integers.
      *
-     * <p>The format is: "version,boardSize,sides,pieRule,moveCount,move1,move2,..,moveN", where version is
-     * currently 1.
+     * <p>The format is: "version,boardSize,sides,pieRule,resigned,move1,move2,..,moveN",
+     * where version is currently 1.
      */
     public String encodeAsString() {
         StringBuilder sb = new StringBuilder();
@@ -258,7 +270,7 @@ public final class GameState {
         sb.append(',');
         sb.append(canSwap ? 1 : 0);
         sb.append(',');
-        sb.append(moves.length);
+        sb.append(resigned ? 1 : 0);
         for (int move : moves) {
             sb.append(',');
             sb.append(move);
@@ -285,13 +297,10 @@ public final class GameState {
         if (version != 1) throw new IllegalArgumentException("Unsupported version number: " + version);
         int boardSize = ints[1];
         int sides = ints[2];
-        int canSwap = ints[3];
-        int moveCount = ints[4];
-        if (ints.length != moveCount + 5) throw new IllegalArgumentException("Invalid move count: " + moveCount);
-        return new GameState(
-                new BoardGeometry(boardSize, sides),
-                canSwap != 0,
-                Arrays.copyOfRange(ints, 5, moveCount + 5));
+        boolean canSwap = ints[3] != 0;
+        boolean resigned = ints[4] != 0;
+        int[] moves = Arrays.copyOfRange(ints, 5, ints.length);
+        return calculate(new BoardGeometry(boardSize, sides), canSwap, moves, resigned);
     }
 
     private static boolean hasAtLeast3Bits(int x) {
