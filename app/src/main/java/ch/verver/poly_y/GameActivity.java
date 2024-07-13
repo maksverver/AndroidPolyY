@@ -69,6 +69,7 @@ public class GameActivity extends Activity {
         aiPlayer = gameRegistry.getCurrentGameAiPlayer();
         aiConfig = gameRegistry.getCurrentGameAiConfig();
         inCampaign = gameRegistry.getCurrentGameIsCampaign();
+        hintButton.setVisibility(inCampaign ? View.GONE : View.VISIBLE);
         GameState gameState = gameRegistry.getCurrentGameState();
         if (gameState == null || (aiPlayer != 0 && aiConfig == null)) {
             Log.w(TAG, "Invalid game configuration!");
