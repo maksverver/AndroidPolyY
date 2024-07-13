@@ -165,9 +165,8 @@ public class GameActivity extends Activity {
         confirmButton.setEnabled(state.selection != null);
         statusTextView.setText(getStatusText(state.gameState));
         gameRegistry.setCurrentGameState(state.gameState);
-        maybeTriggerAiMove();
-        // Do this last, because hint button is disabled when AI is in progress.
         updateHintButton();
+        maybeTriggerAiMove();
     }
 
     private String getStatusText(GameState gameState) {
