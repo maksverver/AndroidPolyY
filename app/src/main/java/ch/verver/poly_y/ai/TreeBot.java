@@ -48,9 +48,9 @@ public class TreeBot {
             this.move = move;
             this.winProbability = winProbability;
         }
-    };
+    }
 
-    public BestMove findBestMoveInIterations(List<Integer> playedMoves, long iterations) {
+    public Tree createTree(List<Integer> playedMoves) {
         GameState state = new GameState();
         boolean myTurn = playedMoves.size() % 2 == 0;
         for (int move : playedMoves) {
@@ -66,11 +66,7 @@ public class TreeBot {
             myTurn = !myTurn;
         }
         assert myTurn;
-
-        Tree tree = new Tree(state);
-        BestMove bestMove = tree.findBestMoveInIterations(iterations);
-        assert bestMove.move != 0;
-        return bestMove;
+        return new Tree(state);
     }
 
     private int randomInt() {
@@ -377,7 +373,7 @@ public class TreeBot {
     }
 
     // Implementation of a tree node for monte carlo tree search (MCTS)
-    private class Tree {
+    public class Tree {
         private final GameState state;    // The game state at the current node
         private final boolean myMove;        // Is it my move? (note that this could also be passed around instead of storing it in tree nodes)
 
@@ -415,12 +411,7 @@ public class TreeBot {
             return children.get(move);
         }
 
-        public BestMove findBestMoveInIterations(long iterations) {
-            while (iterations-- > 0) expand();
-            return getBestMove();
-        }
-
-        private BestMove getBestMove() {
+        public BestMove getBestMove() {
             // Select the move with the highest number of samples
             int mostSamples = -1;
             int bestMove = state.remainingMoves[0];

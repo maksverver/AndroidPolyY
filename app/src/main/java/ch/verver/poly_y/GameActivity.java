@@ -6,9 +6,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.MainThread;
 import androidx.annotation.Nullable;
 
 public class GameActivity extends Activity {
@@ -20,6 +20,7 @@ public class GameActivity extends Activity {
     private Button hintButton;
     private Button confirmButton;
     private GameView gameView;
+    private ProgressBar progressBar;
 
     private int aiPlayer = 0;
     private @Nullable AiConfig aiConfig = null;
@@ -28,7 +29,6 @@ public class GameActivity extends Activity {
     private boolean hintInProgress = false;
     private boolean aiInProgress = false;
 
-    @MainThread
     private void changeState(GameStateWithSelection newState) {
         state = newState;
         gameView.setGameState(state);
@@ -78,7 +78,6 @@ public class GameActivity extends Activity {
         }
     }
 
-    @MainThread
     private void updateHintButton() {
         hintButton.setEnabled(
                 !inCampaign && !state.gameState.isGameOver() && !hintInProgress && !aiInProgress &&
@@ -90,19 +89,30 @@ public class GameActivity extends Activity {
         final GameState originalGameState = state.gameState;
         if (originalGameState.getNextPlayer() == aiPlayer) {
             aiInProgress = true;
-            AiManager.getInstance().requestAiMove(originalGameState, aiConfig, (move, probability) -> {
-                runOnUiThread(() -> {
-                    aiInProgress = false;
-                    if (!originalGameState.equals(state.gameState)) {
-                        // This should not happen normally; but just to be sure.
-                        Log.w(TAG, "Game state has changed! ");
-                        maybeTriggerAiMove();
-                    } else {
-                        changeState(new GameStateWithSelection(state.gameState.move(move)));
-                    }
-                });
-            });
+            progressBar.setProgress(0);
+            progressBar.setVisibility(ProgressBar.VISIBLE);
+            AiManager.getInstance().requestAiMove(
+                    originalGameState,
+                    aiConfig,
+                    (move, probability) -> {
+                        runOnUiThread(() -> {
+                            progressBar.setVisibility(ProgressBar.INVISIBLE);
+                            aiInProgress = false;
+                            if (!originalGameState.equals(state.gameState)) {
+                                // This should not happen normally; but just to be sure.
+                                Log.w(TAG, "Game state has changed! ");
+                                maybeTriggerAiMove();
+                            } else {
+                                changeState(new GameStateWithSelection(state.gameState.move(move)));
+                            }
+                        });
+                    },
+                    this::updateProgressBar);
         }
+    }
+
+    private void updateProgressBar(int percent) {
+        runOnUiThread(() -> progressBar.setProgress(percent));
     }
 
     @Override
@@ -120,6 +130,7 @@ public class GameActivity extends Activity {
         confirmButton.setOnClickListener(this::onConfirmButtonClick);
         gameView = findViewById(R.id.gameView);
         gameView.addFieldClickListener(this::onFieldClicked);
+        progressBar = findViewById(R.id.progressBar);
 
         gameRegistry = GameRegistry.getInstance(this);
 
@@ -174,18 +185,25 @@ public class GameActivity extends Activity {
     private void onHintButtonClick(View unusedView) {
         hintButton.setEnabled(false);
         hintInProgress = true;
+        progressBar.setProgress(0);
+        progressBar.setVisibility(ProgressBar.VISIBLE);
         final GameState originalGameState = state.gameState;
-        AiManager.getInstance().requestAiMove(originalGameState, AiConfig.HINT_CONFIG, (move, probability) -> {
-            runOnUiThread(() -> {
-                hintInProgress = false;
-                if (!originalGameState.equals(state.gameState)) {
-                    Log.w(TAG, "Game state has changed! Ignoring AI hint.");
-                    updateHintButton();
-                } else {
-                    changeState(state.setSelection(move));
-                }
-            });
-        });
+        AiManager.getInstance().requestAiMove(
+                originalGameState,
+                AiConfig.HINT_CONFIG,
+                (move, probability) -> {
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(ProgressBar.INVISIBLE);
+                        hintInProgress = false;
+                        if (!originalGameState.equals(state.gameState)) {
+                            Log.w(TAG, "Game state has changed! Ignoring AI hint.");
+                            updateHintButton();
+                        } else {
+                            changeState(state.setSelection(move));
+                        }
+                    });
+                },
+                this::updateProgressBar);
     }
 
     private void onConfirmButtonClick(View unusedView) {
