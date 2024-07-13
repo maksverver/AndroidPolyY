@@ -38,106 +38,6 @@ public class GameActivity extends Activity {
     private boolean hintInProgress = false;
     private int suppressAiResignation = 0;
 
-    private void changeState(GameState newState) {
-        changeStateWithSelection(new GameStateWithSelection(newState));
-    }
-
-    private void changeStateWithSelection(GameStateWithSelection newState) {
-        state = newState;
-        gameView.setGameState(state);
-        resignButton.setText(
-                getString(state.gameState.isGameOver() ? R.string.game_button_back : R.string.game_button_resign));
-        resignButton.setEnabled(state.gameState.isGameOver() || isPlayerTurn());
-        confirmButton.setEnabled(state.selection != null);
-        statusTextView.setText(getStatusText(state.gameState));
-        gameRegistry.setCurrentGameState(state.gameState);
-        maybeTriggerAiMove();
-        // Do this last, because hint button is disabled when AI is in progress.
-        updateHintButton();
-    }
-
-    private String getStatusText(GameState gameState) {
-        String p1 = getString(
-                aiPlayer == 0 ? R.string.game_status_name_player_1 :
-                        aiPlayer == 1 ? R.string.game_status_name_ai : R.string.game_status_name_player)
-                + " (" + getString(R.string.game_status_color_player_1) + ")";
-        String p2 = getString(
-                aiPlayer == 0 ? R.string.game_status_name_player_2 :
-                        aiPlayer == 2 ? R.string.game_status_name_ai : R.string.game_status_name_player)
-                + " (" + getString(R.string.game_status_color_player_2) + ")";
-
-        switch (gameState.getNextPlayer()) {
-            case 0:
-                // Game is over
-                switch (gameState.getWinner()) {
-                    case 0:
-                        return getString(R.string.game_status_tied);
-                    case 1:
-                        return gameState.isResigned() ?
-                            p2 + " " + getString(R.string.game_status_resigned) :
-                            p1 + " " + getString(R.string.game_status_won);
-                    case 2:
-                        return gameState.isResigned() ?
-                            p1 + " " + getString(R.string.game_status_resigned) :
-                            p2 + " " + getString(R.string.game_status_won);
-                    default: return getString(R.string.game_status_game_over);
-                }
-            case 1:
-                return p1 + " " + getString(R.string.game_status_to_move);
-            case 2:
-                return p2 + " " + getString(R.string.game_status_to_move);
-            default:
-                return getString(R.string.game_status_invalid_state);
-        }
-    }
-
-    private void updateHintButton() {
-        hintButton.setEnabled(
-                !hintInProgress && !inCampaign && isPlayerTurn() &&
-                BoardGeometry.DEFAULT_GEOMETRY.equals(state.gameState.getGeometry()));
-    }
-
-    private void maybeTriggerAiMove() {
-        if (!isAiTurn()) return;
-        final GameState originalGameState = state.gameState;
-        if (originalGameState.getNextPlayer() == aiPlayer) {
-            requestAiMove(aiConfig, (move, probability) -> {
-                if (!originalGameState.equals(state.gameState)) {
-                    // This should not happen normally; but just to be sure, retrigger AI.
-                    Log.w(TAG, "Game state has changed! ");
-                    maybeTriggerAiMove();
-                    return;
-                }
-
-                if (probability >= RESIGNATION_THRESHOLD || suppressAiResignation > 0) {
-                    // Play the AI move normally.
-                    changeState(originalGameState.move(move));
-                    if (suppressAiResignation > 0) --suppressAiResignation;
-                } else {
-                    // Win probability is low. Offer the AI's resignation. If the player accepts,
-                    // the game ends. If the player refuses, the move is played and the game
-                    // continues normally.
-                    final AtomicBoolean accepted = new AtomicBoolean(false);
-                    new AlertDialog.Builder(this)
-                            .setMessage(R.string.ai_offers_resignation)
-                            .setPositiveButton("Accept", (dialog, which) -> accepted.set(true))
-                            .setNegativeButton("Refuse", (dialog, which) -> accepted.set(false))
-                            .setOnDismissListener((dialog) -> {
-                                assert originalGameState.equals(state.gameState);
-                                if (accepted.get()) {
-                                    changeState(originalGameState.resign());
-                                } else {
-                                    changeState(originalGameState.move(move));
-                                    suppressAiResignation = SUPPRESS_AI_RESIGNATION;
-                                }
-                            })
-                            .create()
-                            .show();
-                }
-            });
-        }
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -205,23 +105,6 @@ public class GameActivity extends Activity {
         }
     }
 
-    private void requestAiMove(AiConfig config, AiManager.AiMoveCallback callback) {
-        progressBar.setProgress(0);
-        progressBar.setVisibility(ProgressBar.VISIBLE);
-        AiManager.getInstance().requestAiMove(
-                state.gameState,
-                config,
-                (move, probability) -> {
-                    runOnUiThread(() -> {
-                        progressBar.setVisibility(ProgressBar.INVISIBLE);
-                        callback.move(move, probability);
-                    });
-                },
-                (percent) -> {
-                    runOnUiThread(() -> progressBar.setProgress(percent));
-                });
-    }
-
     private void onHintButtonClick(View unusedView) {
         hintButton.setEnabled(false);
         hintInProgress = true;
@@ -247,6 +130,12 @@ public class GameActivity extends Activity {
         }
     }
 
+    private void onFieldClicked(BoardGeometry.Vertex v) {
+        if (isPlayerTurn() && state.gameState.isValidMove(v)) {
+            changeStateWithSelection(state.toggleSelection(v));
+        }
+    }
+
     private boolean isPlayerTurn() {
         int player = state.gameState.getNextPlayer();
         return player != 0 && player != aiPlayer;
@@ -257,9 +146,120 @@ public class GameActivity extends Activity {
         return player != 0 && player == aiPlayer;
     }
 
-    private void onFieldClicked(BoardGeometry.Vertex v) {
-        if (isPlayerTurn() && state.gameState.isValidMove(v)) {
-            changeStateWithSelection(state.toggleSelection(v));
+    private void updateHintButton() {
+        hintButton.setEnabled(
+                !hintInProgress && !inCampaign && isPlayerTurn() &&
+                        BoardGeometry.DEFAULT_GEOMETRY.equals(state.gameState.getGeometry()));
+    }
+
+    private void changeState(GameState newState) {
+        changeStateWithSelection(new GameStateWithSelection(newState));
+    }
+
+    private void changeStateWithSelection(GameStateWithSelection newState) {
+        state = newState;
+        gameView.setGameState(state);
+        resignButton.setText(
+                getString(state.gameState.isGameOver() ? R.string.game_button_back : R.string.game_button_resign));
+        resignButton.setEnabled(state.gameState.isGameOver() || isPlayerTurn());
+        confirmButton.setEnabled(state.selection != null);
+        statusTextView.setText(getStatusText(state.gameState));
+        gameRegistry.setCurrentGameState(state.gameState);
+        maybeTriggerAiMove();
+        // Do this last, because hint button is disabled when AI is in progress.
+        updateHintButton();
+    }
+
+    private String getStatusText(GameState gameState) {
+        String p1 = getString(
+                aiPlayer == 0 ? R.string.game_status_name_player_1 :
+                        aiPlayer == 1 ? R.string.game_status_name_ai : R.string.game_status_name_player)
+                + " (" + getString(R.string.game_status_color_player_1) + ")";
+        String p2 = getString(
+                aiPlayer == 0 ? R.string.game_status_name_player_2 :
+                        aiPlayer == 2 ? R.string.game_status_name_ai : R.string.game_status_name_player)
+                + " (" + getString(R.string.game_status_color_player_2) + ")";
+
+        switch (gameState.getNextPlayer()) {
+            case 0:
+                // Game is over
+                switch (gameState.getWinner()) {
+                    case 0:
+                        return getString(R.string.game_status_tied);
+                    case 1:
+                        return gameState.isResigned() ?
+                                p2 + " " + getString(R.string.game_status_resigned) :
+                                p1 + " " + getString(R.string.game_status_won);
+                    case 2:
+                        return gameState.isResigned() ?
+                                p1 + " " + getString(R.string.game_status_resigned) :
+                                p2 + " " + getString(R.string.game_status_won);
+                    default: return getString(R.string.game_status_game_over);
+                }
+            case 1:
+                return p1 + " " + getString(R.string.game_status_to_move);
+            case 2:
+                return p2 + " " + getString(R.string.game_status_to_move);
+            default:
+                return getString(R.string.game_status_invalid_state);
         }
+    }
+
+    private void maybeTriggerAiMove() {
+        if (!isAiTurn()) return;
+        final GameState originalGameState = state.gameState;
+        if (originalGameState.getNextPlayer() == aiPlayer) {
+            requestAiMove(aiConfig, (move, probability) -> {
+                if (!originalGameState.equals(state.gameState)) {
+                    // This should not happen normally; but just to be sure, retrigger AI.
+                    Log.w(TAG, "Game state has changed! ");
+                    maybeTriggerAiMove();
+                    return;
+                }
+
+                if (probability >= RESIGNATION_THRESHOLD || suppressAiResignation > 0) {
+                    // Play the AI move normally.
+                    changeState(originalGameState.move(move));
+                    if (suppressAiResignation > 0) --suppressAiResignation;
+                } else {
+                    // Win probability is low. Offer the AI's resignation. If the player accepts,
+                    // the game ends. If the player refuses, the move is played and the game
+                    // continues normally.
+                    final AtomicBoolean accepted = new AtomicBoolean(false);
+                    new AlertDialog.Builder(this)
+                            .setMessage(R.string.ai_offers_resignation)
+                            .setPositiveButton("Accept", (dialog, which) -> accepted.set(true))
+                            .setNegativeButton("Refuse", (dialog, which) -> accepted.set(false))
+                            .setOnDismissListener((dialog) -> {
+                                assert originalGameState.equals(state.gameState);
+                                if (accepted.get()) {
+                                    changeState(originalGameState.resign());
+                                } else {
+                                    changeState(originalGameState.move(move));
+                                    suppressAiResignation = SUPPRESS_AI_RESIGNATION;
+                                }
+                            })
+                            .create()
+                            .show();
+                }
+            });
+        }
+    }
+
+    private void requestAiMove(AiConfig config, AiManager.AiMoveCallback callback) {
+        progressBar.setProgress(0);
+        progressBar.setVisibility(ProgressBar.VISIBLE);
+        AiManager.getInstance().requestAiMove(
+                state.gameState,
+                config,
+                (move, probability) -> {
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(ProgressBar.INVISIBLE);
+                        callback.move(move, probability);
+                    });
+                },
+                (percent) -> {
+                    runOnUiThread(() -> progressBar.setProgress(percent));
+                });
     }
 }
