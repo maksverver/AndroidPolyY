@@ -427,8 +427,8 @@ public class TreeBot {
             float bestProbability = 0.5f;
             for (int i = 0; i < state.end; i++) {
                 int move = state.remainingMoves[i];
-                if (children.containsKey(move)) {
-                    Tree child = children.get(move);
+                Tree child = children.get(move);
+                if (child != null) {
                     int samples = child.statistics.samples;
                     if (samples > mostSamples) {
                         mostSamples = samples;
