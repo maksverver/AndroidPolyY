@@ -25,6 +25,7 @@ public class GameActivity extends Activity {
 
     private GameRegistry gameRegistry;
     private TextView statusTextView;
+    private Button backButton;
     private Button resignButton;
     private Button hintButton;
     private Button confirmButton;
@@ -45,6 +46,8 @@ public class GameActivity extends Activity {
         // Create the layout and connect views.
         setContentView(R.layout.game_layout);
         statusTextView = findViewById(R.id.statusTextView);
+        backButton = findViewById(R.id.backButton);
+        backButton.setOnClickListener(this::onBackButtonClick);
         resignButton = findViewById(R.id.resignButton);
         resignButton.setOnClickListener(this::onResignButtonClick);
         hintButton = findViewById(R.id.hintButton);
@@ -96,13 +99,13 @@ public class GameActivity extends Activity {
         gameRegistry.startGame(gameState, 0, null, false);
     }
 
+    private void onBackButtonClick(View unusedView) {
+        startActivity(new Intent(this, MainActivity.class));
+        finish();
+    }
+
     private void onResignButtonClick(View unusedView) {
-        if (!state.gameState.isGameOver()) {
-            changeState(state.gameState.resign());
-        } else {
-            startActivity(new Intent(this, MainActivity.class));
-            finish();
-        }
+        changeState(state.gameState.resign());
     }
 
     private void onHintButtonClick(View unusedView) {
@@ -159,9 +162,9 @@ public class GameActivity extends Activity {
     private void changeStateWithSelection(GameStateWithSelection newState) {
         state = newState;
         gameView.setGameState(state);
-        resignButton.setText(
-                getString(state.gameState.isGameOver() ? R.string.game_button_back : R.string.game_button_resign));
-        resignButton.setEnabled(state.gameState.isGameOver() || isPlayerTurn());
+        backButton.setVisibility(state.gameState.isGameOver() ? View.VISIBLE : View.GONE);
+        resignButton.setVisibility(state.gameState.isGameOver() ? View.GONE : View.VISIBLE);
+        resignButton.setEnabled(isPlayerTurn());
         confirmButton.setEnabled(state.selection != null);
         statusTextView.setText(getStatusText(state.gameState));
         gameRegistry.setCurrentGameState(state.gameState);
