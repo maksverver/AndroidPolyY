@@ -1,6 +1,7 @@
 package ch.verver.poly_y;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,8 +12,16 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class GameActivity extends Activity {
     private static final String TAG = "GameActivity";
+
+    /** AI will offer to resign when win probability is below this threshold. */
+    private static final float RESIGNATION_THRESHOLD = 0.05f;
+
+    /** Number of moves to play after resignation is refused, before offering again. */
+    private static final int SUPPRESS_AI_RESIGNATION = 5;
 
     private GameRegistry gameRegistry;
     private TextView statusTextView;
@@ -27,14 +36,18 @@ public class GameActivity extends Activity {
     private boolean inCampaign;
     private GameStateWithSelection state;
     private boolean hintInProgress = false;
-    private boolean aiInProgress = false;
+    private int suppressAiResignation = 0;
 
-    private void changeState(GameStateWithSelection newState) {
+    private void changeState(GameState newState) {
+        changeStateWithSelection(new GameStateWithSelection(newState));
+    }
+
+    private void changeStateWithSelection(GameStateWithSelection newState) {
         state = newState;
         gameView.setGameState(state);
         resignButton.setText(
                 getString(state.gameState.isGameOver() ? R.string.game_button_back : R.string.game_button_resign));
-        resignButton.setEnabled(!aiInProgress);
+        resignButton.setEnabled(state.gameState.isGameOver() || isPlayerTurn());
         confirmButton.setEnabled(state.selection != null);
         statusTextView.setText(getStatusText(state.gameState));
         gameRegistry.setCurrentGameState(state.gameState);
@@ -80,39 +93,49 @@ public class GameActivity extends Activity {
 
     private void updateHintButton() {
         hintButton.setEnabled(
-                !inCampaign && !state.gameState.isGameOver() && !hintInProgress && !aiInProgress &&
+                !hintInProgress && !inCampaign && isPlayerTurn() &&
                 BoardGeometry.DEFAULT_GEOMETRY.equals(state.gameState.getGeometry()));
     }
 
     private void maybeTriggerAiMove() {
-        if (aiPlayer == 0 || aiConfig == null || aiInProgress) return;
+        if (!isAiTurn()) return;
         final GameState originalGameState = state.gameState;
         if (originalGameState.getNextPlayer() == aiPlayer) {
-            aiInProgress = true;
-            progressBar.setProgress(0);
-            progressBar.setVisibility(ProgressBar.VISIBLE);
-            AiManager.getInstance().requestAiMove(
-                    originalGameState,
-                    aiConfig,
-                    (move, probability) -> {
-                        runOnUiThread(() -> {
-                            progressBar.setVisibility(ProgressBar.INVISIBLE);
-                            aiInProgress = false;
-                            if (!originalGameState.equals(state.gameState)) {
-                                // This should not happen normally; but just to be sure.
-                                Log.w(TAG, "Game state has changed! ");
-                                maybeTriggerAiMove();
-                            } else {
-                                changeState(new GameStateWithSelection(state.gameState.move(move)));
-                            }
-                        });
-                    },
-                    this::updateProgressBar);
-        }
-    }
+            requestAiMove(aiConfig, (move, probability) -> {
+                if (!originalGameState.equals(state.gameState)) {
+                    // This should not happen normally; but just to be sure, retrigger AI.
+                    Log.w(TAG, "Game state has changed! ");
+                    maybeTriggerAiMove();
+                    return;
+                }
 
-    private void updateProgressBar(int percent) {
-        runOnUiThread(() -> progressBar.setProgress(percent));
+                if (probability >= RESIGNATION_THRESHOLD || suppressAiResignation > 0) {
+                    // Play the AI move normally.
+                    changeState(originalGameState.move(move));
+                    if (suppressAiResignation > 0) --suppressAiResignation;
+                } else {
+                    // Win probability is low. Offer the AI's resignation. If the player accepts,
+                    // the game ends. If the player refuses, the move is played and the game
+                    // continues normally.
+                    final AtomicBoolean accepted = new AtomicBoolean(false);
+                    new AlertDialog.Builder(this)
+                            .setMessage(R.string.ai_offers_resignation)
+                            .setPositiveButton("Accept", (dialog, which) -> accepted.set(true))
+                            .setNegativeButton("Refuse", (dialog, which) -> accepted.set(false))
+                            .setOnDismissListener((dialog) -> {
+                                assert originalGameState.equals(state.gameState);
+                                if (accepted.get()) {
+                                    changeState(originalGameState.resign());
+                                } else {
+                                    changeState(originalGameState.move(move));
+                                    suppressAiResignation = SUPPRESS_AI_RESIGNATION;
+                                }
+                            })
+                            .create()
+                            .show();
+                }
+            });
+        }
     }
 
     @Override
@@ -150,7 +173,7 @@ public class GameActivity extends Activity {
             finish();
             return;
         }
-        changeState(new GameStateWithSelection(gameState));
+        changeState(gameState);
     }
 
     /**
@@ -175,35 +198,43 @@ public class GameActivity extends Activity {
 
     private void onResignButtonClick(View unusedView) {
         if (!state.gameState.isGameOver()) {
-            changeState(new GameStateWithSelection(state.gameState.resign()));
+            changeState(state.gameState.resign());
         } else {
             startActivity(new Intent(this, MainActivity.class));
             finish();
         }
     }
 
-    private void onHintButtonClick(View unusedView) {
-        hintButton.setEnabled(false);
-        hintInProgress = true;
+    private void requestAiMove(AiConfig config, AiManager.AiMoveCallback callback) {
         progressBar.setProgress(0);
         progressBar.setVisibility(ProgressBar.VISIBLE);
-        final GameState originalGameState = state.gameState;
         AiManager.getInstance().requestAiMove(
-                originalGameState,
-                AiConfig.HINT_CONFIG,
+                state.gameState,
+                config,
                 (move, probability) -> {
                     runOnUiThread(() -> {
                         progressBar.setVisibility(ProgressBar.INVISIBLE);
-                        hintInProgress = false;
-                        if (!originalGameState.equals(state.gameState)) {
-                            Log.w(TAG, "Game state has changed! Ignoring AI hint.");
-                            updateHintButton();
-                        } else {
-                            changeState(state.setSelection(move));
-                        }
+                        callback.move(move, probability);
                     });
                 },
-                this::updateProgressBar);
+                (percent) -> {
+                    runOnUiThread(() -> progressBar.setProgress(percent));
+                });
+    }
+
+    private void onHintButtonClick(View unusedView) {
+        hintButton.setEnabled(false);
+        hintInProgress = true;
+        final GameState originalGameState = state.gameState;
+        requestAiMove(AiConfig.HINT_CONFIG, (move, probability) -> {
+            hintInProgress = false;
+            if (!originalGameState.equals(state.gameState)) {
+                Log.w(TAG, "Game state has changed! Ignoring AI hint.");
+                updateHintButton();
+            } else {
+                changeStateWithSelection(state.setSelection(move));
+            }
+        });
     }
 
     private void onConfirmButtonClick(View unusedView) {
@@ -212,13 +243,23 @@ public class GameActivity extends Activity {
         } else if (!state.gameState.isValidMove(state.selection)) {
             Log.w(TAG, "Selected move is not valid!");
         } else {
-            changeState(new GameStateWithSelection(state.gameState.move(state.selection)));
+            changeState(state.gameState.move(state.selection));
         }
     }
 
+    private boolean isPlayerTurn() {
+        int player = state.gameState.getNextPlayer();
+        return player != 0 && player != aiPlayer;
+    }
+
+    private boolean isAiTurn() {
+        int player = state.gameState.getNextPlayer();
+        return player != 0 && player == aiPlayer;
+    }
+
     private void onFieldClicked(BoardGeometry.Vertex v) {
-        if (!aiInProgress && state.gameState.isValidMove(v)) {
-            changeState(state.toggleSelection(v));
+        if (isPlayerTurn() && state.gameState.isValidMove(v)) {
+            changeStateWithSelection(state.toggleSelection(v));
         }
     }
 }
