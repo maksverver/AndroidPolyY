@@ -27,6 +27,13 @@
             android:text="@string/game_button_resign" />
 
         <Button
+            android:id="@+id/undoButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/game_button_undo" />
+
+        <Button
             android:id="@+id/hintButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

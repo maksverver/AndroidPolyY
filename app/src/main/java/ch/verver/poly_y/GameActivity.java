@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GameActivity extends Activity {
@@ -27,6 +28,7 @@ public class GameActivity extends Activity {
     private TextView statusTextView;
     private Button backButton;
     private Button resignButton;
+    private Button undoButton;
     private Button hintButton;
     private Button confirmButton;
     private GameView gameView;
@@ -38,6 +40,7 @@ public class GameActivity extends Activity {
     private GameStateWithSelection state;
     private boolean hintInProgress = false;
     private int suppressAiResignation = 0;
+    final private ArrayList<GameState> undoStack = new ArrayList<>();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -48,6 +51,8 @@ public class GameActivity extends Activity {
         statusTextView = findViewById(R.id.statusTextView);
         backButton = findViewById(R.id.backButton);
         backButton.setOnClickListener(this::onBackButtonClick);
+        undoButton = findViewById(R.id.undoButton);
+        undoButton.setOnClickListener(this::onUndoButtonClick);
         resignButton = findViewById(R.id.resignButton);
         resignButton.setOnClickListener(this::onResignButtonClick);
         hintButton = findViewById(R.id.hintButton);
@@ -69,6 +74,7 @@ public class GameActivity extends Activity {
         aiPlayer = gameRegistry.getCurrentGameAiPlayer();
         aiConfig = gameRegistry.getCurrentGameAiConfig();
         inCampaign = gameRegistry.getCurrentGameIsCampaign();
+        undoButton.setVisibility(inCampaign ? View.GONE : View.VISIBLE);
         hintButton.setVisibility(inCampaign ? View.GONE : View.VISIBLE);
         GameState gameState = gameRegistry.getCurrentGameState();
         if (gameState == null || (aiPlayer != 0 && aiConfig == null)) {
@@ -105,8 +111,17 @@ public class GameActivity extends Activity {
         finish();
     }
 
+    private void onUndoButtonClick(View unusedView) {
+        if (isUndoPossible()) {
+            changeState(undoStack.remove(undoStack.size() - 1));
+        }
+    }
+
     private void onResignButtonClick(View unusedView) {
-        changeState(state.gameState.resign());
+        if (isPlayerTurn()) {
+            undoStack.add(state.gameState);
+            changeState(state.gameState.resign());
+        }
     }
 
     private void onHintButtonClick(View unusedView) {
@@ -117,7 +132,7 @@ public class GameActivity extends Activity {
             hintInProgress = false;
             if (!originalGameState.equals(state.gameState)) {
                 Log.w(TAG, "Game state has changed! Ignoring AI hint.");
-                updateHintButton();
+                hintButton.setEnabled(isHintPossible());
             } else {
                 changeStateWithSelection(state.setSelection(move));
             }
@@ -125,11 +140,14 @@ public class GameActivity extends Activity {
     }
 
     private void onConfirmButtonClick(View unusedView) {
-        if (state.selection == null) {
+        if (!isPlayerTurn()) {
+            Log.w(TAG, "It's not the player's turn");
+        } else if (state.selection == null) {
             Log.w(TAG, "Confirm button clicked but no selection active!");
         } else if (!state.gameState.isValidMove(state.selection)) {
             Log.w(TAG, "Selected move is not valid!");
         } else {
+            undoStack.add(state.gameState);
             changeState(state.gameState.move(state.selection));
         }
     }
@@ -150,10 +168,14 @@ public class GameActivity extends Activity {
         return player != 0 && player == aiPlayer;
     }
 
-    private void updateHintButton() {
-        hintButton.setEnabled(
-                !hintInProgress && !inCampaign && isPlayerTurn() &&
-                        BoardGeometry.DEFAULT_GEOMETRY.equals(state.gameState.getGeometry()));
+    private boolean isUndoPossible() {
+        // Use !isAiTurn() instead of isPlayerTurn() to allow undoing resignation when game is over.
+        return !isAiTurn() && !undoStack.isEmpty() && !inCampaign && !hintInProgress;
+    }
+
+    private boolean isHintPossible() {
+        return isPlayerTurn() && !inCampaign && !hintInProgress &&
+                BoardGeometry.DEFAULT_GEOMETRY.equals(state.gameState.getGeometry());
     }
 
     private void changeState(GameState newState) {
@@ -166,10 +188,12 @@ public class GameActivity extends Activity {
         backButton.setVisibility(state.gameState.isGameOver() ? View.VISIBLE : View.GONE);
         resignButton.setVisibility(state.gameState.isGameOver() ? View.GONE : View.VISIBLE);
         resignButton.setEnabled(isPlayerTurn());
+        // Use !isAiTurn() instead of isPlayerTurn() to allow undoing resignation when game is over.
+        undoButton.setEnabled(isUndoPossible());
+        hintButton.setEnabled(isHintPossible());
         confirmButton.setEnabled(state.selection != null);
         statusTextView.setText(getStatusText(state.gameState));
-        gameRegistry.setCurrentGameState(state.gameState);
-        updateHintButton();
+        gameRegistry.setCurrentGameState(state.gameState);  // saves to SharedPreferences
         maybeTriggerAiMove();
     }
 

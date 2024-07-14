@@ -13,6 +13,7 @@
     <string name="game_status_game_over">Game over (winner unknown)</string>
     <string name="game_status_invalid_state">Invalid game state</string>
     <string name="game_button_resign">Resign</string>
+    <string name="game_button_undo">Undo</string>
     <string name="game_button_back">Back</string>
     <string name="game_button_hint">Hint</string>
     <string name="game_button_confirm">Confirm</string>
