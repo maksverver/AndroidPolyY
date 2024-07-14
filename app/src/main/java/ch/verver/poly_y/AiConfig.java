@@ -10,7 +10,7 @@ public final class AiConfig {
     public static final int MIN_DIFFICULTY = 1;
     public static final int MEDIUM_DIFFICULTY = 5;
     public static final int HARD_DIFFICULTY = 10;
-    public static final int MAX_DIFFICULTY = 15;
+    public static final int MAX_DIFFICULTY = 14;
 
     /**
      * Create an AI config from a difficulty level.
@@ -27,12 +27,12 @@ public final class AiConfig {
             throw new IllegalArgumentException("Difficulty must be between " + MIN_DIFFICULTY + " and " + MAX_DIFFICULTY);
         }
         // iterations == pow(2, difficulty), so:
-        //  - level  1:     4 iterations
-        //  - level  5:    64 iterations
-        //  - level 10:  2048 iterations (1~2 seconds)
-        //  - level 15: 65536 iterations (30~60 seconds).
+        //  - level  1:     6 iterations
+        //  - level  5:    96 iterations
+        //  - level 10:  3072 iterations (~2 seconds)
+        //  - level 15: 49152 iterations (~30 seconds)
         // There are 32 playouts per iteration, so even level 1 is not completely random.
-        int iterations = 2 << difficulty;
+        int iterations = 3 << difficulty;
         return new AiConfig(iterations, useOpeningBook);
     }
 
