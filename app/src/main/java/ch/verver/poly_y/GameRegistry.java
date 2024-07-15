@@ -101,6 +101,18 @@ public class GameRegistry {
         return currentGameIsCampaign;
     }
 
+    public synchronized int getCampaignLevel() {
+        return campaignLevel;
+    }
+
+    public synchronized int getCampaignDifficulty() {
+        return AiConfig.MIN_DIFFICULTY + ((campaignLevel - MIN_CAMPAIGN_LEVEL) >> 1);
+    }
+
+    public synchronized int getCampaignAiPlayer() {
+        return ((campaignLevel - MIN_CAMPAIGN_LEVEL) & 1) + 1;
+    }
+
     public synchronized void startGame(
             GameState newGameState, int aiPlayer, @Nullable AiConfig aiConfig, boolean isCampaign) {
         if (aiPlayer < 0 || aiPlayer > 2) {
@@ -129,18 +141,6 @@ public class GameRegistry {
         editor.putBoolean(CURRENT_GAME_IS_CAMPAIGN_KEY, isCampaign);
 
         editor.apply();
-    }
-
-    public int getCampaignLevel() {
-        return campaignLevel;
-    }
-
-    public int getCampaignDifficulty() {
-        return AiConfig.MIN_DIFFICULTY + ((campaignLevel - MIN_CAMPAIGN_LEVEL) >> 1);
-    }
-
-    public int getCampaignAiPlayer() {
-        return ((campaignLevel - MIN_CAMPAIGN_LEVEL) & 1) + 1;
     }
 
     @CheckResult
