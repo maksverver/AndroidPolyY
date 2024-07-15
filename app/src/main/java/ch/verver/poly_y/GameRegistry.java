@@ -9,6 +9,12 @@ import androidx.annotation.Nullable;
 
 import java.util.Objects;
 
+/**
+ * Tracks the current game in progress and some related information. This ensures the game is not
+ * lost when the app is restarted.
+ *
+ * <p>All data is stored in {@link SharedPreferences}.</p>>
+ */
 public class GameRegistry {
     public static final int MIN_CAMPAIGN_LEVEL = 1;
     public static final int MAX_CAMPAIGN_LEVEL = MIN_CAMPAIGN_LEVEL + (AiConfig.MAX_DIFFICULTY - AiConfig.MIN_DIFFICULTY + 1)*2;
