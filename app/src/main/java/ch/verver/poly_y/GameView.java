@@ -1,5 +1,7 @@
 package ch.verver.poly_y;
+
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -9,17 +11,14 @@ import android.view.MotionEvent;
 import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.res.ResourcesCompat;
 
 import java.util.ArrayList;
 
 public class GameView extends View {
     private static final String TAG = "GameView";
 
-    private static final int[] PLAYER_COLORS = {
-        0xff404040,  // beige (neutral)
-        0xffe00000,  // red (player 1)
-        0xff0040c0,  // blue (player 2)
-    };
+    private final int[] playerColors;
 
     public interface FieldClickListener {
         void onFieldClick(BoardGeometry.Vertex v);
@@ -52,6 +51,12 @@ public class GameView extends View {
 
     public GameView(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
+
+        final Resources resources = getResources();
+        playerColors = new int[] {
+                ResourcesCompat.getColor(resources, R.color.beige, null),
+                ResourcesCompat.getColor(resources, R.color.red, null),
+                ResourcesCompat.getColor(resources, R.color.blue, null)};
 
         setOnTouchListener(this::onTouch);
     }
@@ -129,7 +134,7 @@ public class GameView extends View {
         for (BoardGeometry.Edge e : geometry.edges) {
             int p1 = state.gameState.getPiece(e.v);
             int p2 = state.gameState.getPiece(e.w);
-            paint1.setColor(PLAYER_COLORS[p1 == p2 ? p1 : 0]);
+            paint1.setColor(playerColors[p1 == p2 ? p1 : 0]);
             canvas.drawLine(e.v.x, e.v.y, e.w.x, e.w.y, paint1);
         }
 
@@ -137,14 +142,14 @@ public class GameView extends View {
         paint2.setStyle(Paint.Style.FILL);
         for (BoardGeometry.Vertex v : geometry.vertices) {
             int player = state.gameState.getPiece(v);
-            paint2.setColor(PLAYER_COLORS[player]);
+            paint2.setColor(playerColors[player]);
             canvas.drawCircle(v.x, v.y, (player == 0 ? 0.167f : 0.33f) / geometry.boardSize, paint2);
 
             if (v.equals(state.selection)) {
                 paint1.reset();
                 paint1.setStyle(Paint.Style.STROKE);
                 paint1.setStrokeWidth(0.167f / geometry.boardSize);
-                paint1.setColor(PLAYER_COLORS[state.gameState.getNextPlayer()]);
+                paint1.setColor(playerColors[state.gameState.getNextPlayer()]);
                 canvas.drawCircle(v.x, v.y, 0.25f / geometry.boardSize, paint1);
             }
         }
@@ -167,7 +172,7 @@ public class GameView extends View {
         for (int corner = 0; corner < geometry.sides; ++corner) {
             int player = state.gameState.getCornerWinner(corner);
             paint1.setStrokeWidth((player == 0 ? 0.1f : 0.2f) / geometry.boardSize);
-            paint1.setColor(PLAYER_COLORS[player]);
+            paint1.setColor(playerColors[player]);
             float sweepAngle = 360f / geometry.sides * 0.8f;
             float startAngle = 360f * corner / geometry.sides - sweepAngle/2 - 90;
             canvas.drawArc(-0.95f, -0.95f, 0.95f, 0.95f,  startAngle, sweepAngle, false, paint1);
