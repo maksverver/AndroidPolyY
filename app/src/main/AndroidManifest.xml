@@ -13,25 +13,13 @@
         android:theme="@style/Theme.PolyY"
         tools:targetApi="31">
 
-        <activity android:name=".MainActivity" android:exported="true">
-            <!--
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            -->
-        </activity>
+        <activity android:name=".GameActivity" android:exported="true" />
 
-        <activity android:name=".WebActivity" android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+        <activity android:name=".BenchmarkActivity" android:exported="true" />
 
-        <activity android:name=".GameActivity" android:exported="true"/>
+        <!-- Deprecated. TODO: remove this? -->
+        <activity android:name=".OldMainActivity" android:exported="true" />
 
-        <activity android:name=".BenchmarkActivity" android:exported="true"/>
     </application>
 
 </manifest>

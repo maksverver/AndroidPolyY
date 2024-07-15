@@ -13,8 +13,8 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
-public class MainActivity extends Activity {
-    private static final String TAG = "MainActivity";
+public class OldMainActivity extends Activity {
+    private static final String TAG = "OldMainActivity";
 
     private GameRegistry gameRegistry;
     private TextView currentLevelTextView;
