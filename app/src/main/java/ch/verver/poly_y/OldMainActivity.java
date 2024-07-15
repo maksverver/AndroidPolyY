@@ -43,7 +43,7 @@ public class OldMainActivity extends Activity {
         // Force night-mode, which looks more consistent with the GameActivity.
         //AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
 
-        setContentView(R.layout.main_layout);
+        setContentView(R.layout.old_main_layout);
 
         currentLevelTextView = findViewById(R.id.currentLevelTextView);
         currentLevelTextView.setText(
