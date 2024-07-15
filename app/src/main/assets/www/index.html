@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Poly-Y</title>
+    <link rel="stylesheet" href="stylesheet.css">
+</head>
+<body>
+
+<h1 class="center">Information</h1>
+<p class="center">
+<button onclick="document.location='rules.html'">Rules</button>
+<button onclick="document.location='about.html'">About</button>
+</p>
+
+<h1 class="center">Campaign</h1>
+<p class="center">Current level: <span id="campaign-level"></span></p>
+<p class="center small">Difficulty <span id="campaign-difficulty"></span>. AI plays <span id="campaign-ai-player"></span>.</p>
+<p class="center"><button onclick="app.startCampaignGame()">Start Campaign Game</button></p>
+
+<h1 class="center">Custom</h1>
+
+<!-- TODO: all controls! -->
+<p class="center"><button disabled onclick="app.startCustomGame()">Start Custom Game</button></p>
+
+<script src="index.js" defer></script>
+</body>
+</html>

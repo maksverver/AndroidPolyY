@@ -1,0 +1,78 @@
+body {
+  background-color: black;
+  color: white;
+  font: 12pt sans-serif;
+  margin: 8px 16px;
+}
+
+h1, h2, h3, h4, b {
+  color: #ffd500;
+}
+
+h1 {
+  background: #404040;
+  margin: -8px -16px;
+  padding: 8px 16px;
+  text-align: center;
+}
+
+a {
+  color: #0095ff;
+}
+
+a:active {
+  color: #ffd500;
+}
+
+button {
+  border: 2px solid #0095ff;
+  background-color: #0095ff;
+  color: white;
+}
+
+button:active {
+  border-color: white;
+}
+
+button:disabled {
+  background-color: #002040;
+  border-color: #002040;
+  color: #404040;
+}
+
+/* These match the board and piece colors defined in GameView.java */
+.color-beige { color: #404040 }
+.color-red { color: #e00000 }
+.color-blue { color: #0040c0 }
+
+.center {
+  text-align: center;
+}
+
+button {
+  font-size: 15pt;
+  padding: 0.5em 1em;
+  margin: 0.5em;
+}
+
+@media (orientation: portrait) {
+  img.scale-to-width {
+    width: 80%;
+    height: auto;
+  }
+}
+
+@media (orientation: landscape) {
+  img.scale-to-width {
+    width: auto;
+    height: 80%;
+  }
+}
+
+p {
+  word-break: break-word;
+}
+
+p.small {
+  font-size: 10pt;
+}

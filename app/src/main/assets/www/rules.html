@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rules of Poly-Y</title>
+    <link rel="stylesheet" href="stylesheet.css">
+    <style>
+        /* Only justify on Rules page. It looks ugly elsewhere. */
+        p { text-align: justify }
+    </style>
+</head>
+<body>
+<h1>Rules of Poly-Y</h1>
+
+<p>Poly-Y is an abstract board game for two players, <b class="color-red">red</b> and <b class="color-blue">blue</b>. The standard
+board has 5 sides and 5 corners, and consists of 106 fields, as shown below. Most fields connect to
+6 neighboring fields, except for the fields at the edge of the board, and the center field, which
+has only 5 neighbors.</p>
+
+<p class="center"><img src="empty-board.png" class="scale-to-width" alt="Empty board"></p>
+
+<p><b>Game play:</b> Players take turns placing stones of their color on empty fields.
+Corners of the board can be captured by connecting the two adjacent sides with an arbitrary third
+side, creating a <b>Y</b> shape. The player that captures at least 3 of the 5 corners of the board
+wins.</p>
+
+<p class="small">(It can be shown that each corner can be captured by only one player,
+and that eventually all corners of the board will be captured, so ties are impossible.)</p>
+
+<p class="center"><img src="board-with-y.png" class="scale-to-width" alt="Board with Y"></p>
+
+<p>In the example above, red has captured the top corner by connecting the adjacent top-left and
+top-right sides with the bottom side of the board.
+Meanwhile, blue has captured two corners on the left side of the board.
+Note that the corner fields count as connecting to both adjacent sides, so blue's
+stones connect three adjacent sides.</p>
+
+<p><b>Pie rule:</b>
+With just the above rules, the starting player would have a large advantage.
+To balance the game, there is one more rule: after the first player places his first stone,
+the second player may replace that stone with one of her own color (but only on her first turn!).
+This forces the first player to choose a first move that is neither too strong nor too weak.</p>
+
+<p><b>Game modes:</b>
+This app supports two game modes.</p>
+
+<ul>
+<li>In <b>campaign</b> mode, you play against an AI whose strength depends on your current level.
+When you win a game, your level increases, and when you lose, it decreases.
+Try to get your level as high as possible!</li>
+<li>In <b>custom</b> mode, you can create arbitrary games for practice.
+Winning or losing these games does not affect your campaign level, so feel free to experiment!</li>
+</ul>
+
+<p class="center">
+<button onclick="document.location='index.html'">Back</button>
+</p>
+
+</body>
+</html>
