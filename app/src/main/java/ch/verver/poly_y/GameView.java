@@ -38,59 +38,52 @@ public class GameView extends View {
 
     private final ArrayList<FieldClickListener> fieldClickListeners = new ArrayList<>();
 
-    private final OnTouchListener touchListener =
-        (View view, MotionEvent event) -> {
-            final BoardGeometry geometry = state.gameState.getGeometry();;
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN: {
-                    float[] xy = new float[]{event.getX(), event.getY()};
-                    inverseMatrix.mapPoints(xy);
-                    float x = xy[0], y = xy[1];
-                    // This could be optimized... but it's probably not necessary.
-                    for (BoardGeometry.Vertex v : geometry.vertices) {
-                        if (Math.hypot(v.x - x, v.y - y) < 0.5f / geometry.boardSize) {
-                            for (FieldClickListener listener : fieldClickListeners) {
-                                try {
-                                    listener.onFieldClick(v);
-                                } catch (Exception e) {
-                                    Log.w(TAG, "FieldClickListener threw exception!", e);
-                                }
-                            }
-                            return true;
-                        }
-                    }
-                }
-
-                case MotionEvent.ACTION_UP: {
-                    performClick();
-                    return true;
-                }
-            }
-            return false;
-        };
-
     public GameView(Context context) {
-        super(context);
-        init(context, null);
+        this(context, null);
     }
 
     public GameView(Context context, @Nullable AttributeSet attrs) {
-        super(context, attrs);
-        init(context, attrs);
+        this(context, attrs, 0);
     }
 
     public GameView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init(context, attrs);
+        this(context, attrs, defStyleAttr, 0);
     }
 
     public GameView(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        init(context, attrs);
+
+        setOnTouchListener(this::onTouch);
     }
 
-    private void init(Context context, @Nullable AttributeSet attrs) {
-        setOnTouchListener(touchListener);
+    private boolean onTouch(View view, MotionEvent event) {
+        final BoardGeometry geometry = state.gameState.getGeometry();;
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN: {
+                float[] xy = new float[]{event.getX(), event.getY()};
+                inverseMatrix.mapPoints(xy);
+                float x = xy[0], y = xy[1];
+                // This could be optimized... but it's probably not necessary.
+                for (BoardGeometry.Vertex v : geometry.vertices) {
+                    if (Math.hypot(v.x - x, v.y - y) < 0.5f / geometry.boardSize) {
+                        for (FieldClickListener listener : fieldClickListeners) {
+                            try {
+                                listener.onFieldClick(v);
+                            } catch (Exception e) {
+                                Log.w(TAG, "FieldClickListener threw exception!", e);
+                            }
+                        }
+                        return true;
+                    }
+                }
+            }
+
+            case MotionEvent.ACTION_UP: {
+                performClick();
+                return true;
+            }
+        }
+        return false;
     }
 
     public void addFieldClickListener(FieldClickListener listener) {
