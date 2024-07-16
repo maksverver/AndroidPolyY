@@ -1,0 +1,15 @@
+div.option {
+  display: flex;
+  flex-direction: horizontal;
+  margin: 1em;
+}
+
+div.option div.title {
+  flex: 1;
+}
+
+#difficulty-value {
+  display: inline-block;
+  min-width: 2em;
+  text-align: right;
+}

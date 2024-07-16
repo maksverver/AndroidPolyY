@@ -7,6 +7,8 @@ public final class AiConfig {
 
     public static final AiConfig HINT_CONFIG = new AiConfig(1000, false);
 
+    // Possible difficulty levels.
+    // Keep these values in sync with the difficulty slider defined in index.html.
     public static final int MIN_DIFFICULTY = 1;
     public static final int MEDIUM_DIFFICULTY = 5;
     public static final int HARD_DIFFICULTY = 10;

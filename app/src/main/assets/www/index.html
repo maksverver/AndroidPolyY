@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Poly-Y</title>
     <link rel="stylesheet" href="stylesheet.css">
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
 
@@ -19,9 +20,40 @@
 <p class="center"><button onclick="app.startCampaignGame()">Start Campaign Game</button></p>
 
 <h1 class="center">Custom</h1>
+<div class="option">
+    <div class="title">Pie rule</div>
+    <div class="values">
+        <label><input type="radio" id="pie-rule-off" name="pie-rule" value="off"> Off</label>
+        <label><input type="radio" id="pie-rule-on" name="pie-rule" value="on" checked> On</label>
+    </div>
+</div>
+<div class="option">
+    <div class="title">AI plays</div>
+    <div class="values">
+        <label><input type="radio" id="ai-player-0" name="ai-player" value="0"> None</label>
+        <label><input type="radio" id="ai-player-1" name="ai-player" value="1" checked> First</label>
+        <label><input type="radio" id="ai-player-2" name="ai-player" value="2"> Second</label>
+    </div>
+</div>
+<div class="option">
+    <div class="title">Opening book</div>
+    <div class="values">
+        <label><input type="radio" id="opening-book-off" name="opening-book" value="off" checked> Off</label>
+        <label><input type="radio" id="opening-book-on" name="opening-book" value="on"> On</label>
+    </div>
+</div>
+<div class="option">
+    <div class="title">Difficulty</div>
+    <div class="values">
+        <label>
+            <!-- Keep these values in sync with AiConfig.java -->
+            <input id="difficulty-range" type="range" min="1" max="14" value="5">
+            <span id="difficulty-value">5</span>
+        </label>
+    </div>
+</div>
 
-<!-- TODO: all controls! -->
-<p class="center"><button disabled onclick="app.startCustomGame()">Start Custom Game</button></p>
+<p class="center"><button id="start-custom-game-button">Start Custom Game</button></p>
 
 <script src="index.js" defer></script>
 </body>

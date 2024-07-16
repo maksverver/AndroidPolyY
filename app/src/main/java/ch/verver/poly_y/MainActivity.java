@@ -47,24 +47,26 @@ public class MainActivity extends Activity {
     private void startCampaignGame() {
         int difficulty = gameRegistry.getCampaignDifficulty();
         int aiPlayer = gameRegistry.getCampaignAiPlayer();
-        Log.i(TAG, "Starting campaign game with aiPlayer=" + aiPlayer + " difficulty="+ difficulty);
+        Log.i(TAG, "Starting campaign game with aiPlayer=" + aiPlayer + " difficulty=" + difficulty);
         gameRegistry.startGame(GameState.DEFAULT_GAME_STATE, aiPlayer, AiConfig.fromDifficulty(difficulty), true);
         switchToGameActivity();
     }
 
-    private void startCustomGame() {
-        Log.i(TAG, "Custom game button clicked! TODO: start custom game");
-        /*
-        boolean pieRule = pieRuleSwitch.isChecked();
-        GameState gameState = GameState.calculate(BoardGeometry.DEFAULT_GEOMETRY, pieRule);
-        int aiPlayer = aiPlayerFirstButton.isChecked() ? 1 : aiPlayerSecondButton.isChecked() ? 2 : 0;
-        int difficulty = difficultyPicker.getValue();
-        boolean openingBook = openingBookSwitch.isChecked();
-        AiConfig aiConfig = AiConfig.fromDifficulty(difficulty, openingBook);
-        Log.i(TAG, "Starting custom game with pieRule=" + pieRule + " aiPlayer=" + aiPlayer + " difficulty="+ difficulty + " openingBook=" + openingBook);
-        gameRegistry.startGame(gameState, aiPlayer, aiConfig, false);
+    private void startCustomGame(boolean pieRule, int aiPlayer, boolean openingBook, int difficulty) {
+        // The try-catch block here ensures that we catch the IllegalArgumentException that would be
+        // thrown if any of the parameters are out of range.
+        try {
+            gameRegistry.startGame(
+                    GameState.calculate(BoardGeometry.DEFAULT_GEOMETRY, pieRule),
+                    aiPlayer,
+                    AiConfig.fromDifficulty(difficulty, openingBook),
+                    /* isCampaign= */ false);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start custom game", e);
+            return;
+        }
+        Log.i(TAG, "Starting custom game with pieRule=" + pieRule + " aiPlayer=" + aiPlayer + " difficulty=" + difficulty + " openingBook=" + openingBook);
         switchToGameActivity();
-        */
     }
 
     private void switchToGameActivity() {
@@ -147,8 +149,8 @@ public class MainActivity extends Activity {
 
         @SuppressWarnings("unused")
         @JavascriptInterface
-        public void startCustomGame() {
-            MainActivity.this.startCustomGame();
+        public void startCustomGame(boolean pieRule, int aiPlayer, boolean openingBook, int difficulty) {
+            MainActivity.this.startCustomGame(pieRule, aiPlayer, openingBook, difficulty);
         }
     }
 }
