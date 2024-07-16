@@ -21,30 +21,30 @@
 
 <h1 class="center">Custom</h1>
 <div class="option">
-    <div class="title">Pie rule</div>
-    <div class="values">
-        <label><input type="radio" id="pie-rule-off" name="pie-rule" value="off"> Off</label>
-        <label><input type="radio" id="pie-rule-on" name="pie-rule" value="on" checked> On</label>
+    <div class="title">Pie rule: </div>
+    <div class="radio-container">
+        <label><input type="radio" id="pie-rule-off" name="pie-rule" value="off"> <span>Off</span></label>
+        <label><input type="radio" id="pie-rule-on" name="pie-rule" value="on" checked> <span>On</span></label>
     </div>
 </div>
 <div class="option">
-    <div class="title">AI plays</div>
-    <div class="values">
-        <label><input type="radio" id="ai-player-0" name="ai-player" value="0"> None</label>
-        <label><input type="radio" id="ai-player-1" name="ai-player" value="1" checked> First</label>
-        <label><input type="radio" id="ai-player-2" name="ai-player" value="2"> Second</label>
+    <div class="title">AI plays: </div>
+    <div class="radio-container">
+        <label><input type="radio" id="ai-player-0" name="ai-player" value="0"> <span>None</span></label>
+        <label><input type="radio" id="ai-player-1" name="ai-player" value="1" checked> <span>First</span></label>
+        <label><input type="radio" id="ai-player-2" name="ai-player" value="2"> <span>Second</span></label>
     </div>
 </div>
 <div class="option">
-    <div class="title">Opening book</div>
-    <div class="values">
-        <label><input type="radio" id="opening-book-off" name="opening-book" value="off" checked> Off</label>
-        <label><input type="radio" id="opening-book-on" name="opening-book" value="on"> On</label>
+    <div class="title">Opening book: </div>
+    <div class="radio-container">
+        <label><input type="radio" id="opening-book-off" name="opening-book" value="off" checked> <span>Off</span></label>
+        <label><input type="radio" id="opening-book-on" name="opening-book" value="on"> <span>On</span></label>
     </div>
 </div>
 <div class="option">
-    <div class="title">Difficulty</div>
-    <div class="values">
+    <div class="title">Difficulty: </div>
+    <div class="range-container">
         <label>
             <!-- Keep these values in sync with AiConfig.java -->
             <input id="difficulty-range" type="range" min="1" max="14" value="5">

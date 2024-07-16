@@ -5,15 +5,20 @@ body {
   margin: 8px 16px;
 }
 
-h1, h2, h3, h4, b {
-  color: #ffd500;
-}
 
 h1 {
   background: #404040;
-  margin: -8px -16px;
-  padding: 8px 16px;
+  margin: 0 -16px;
+  padding: 8px 16px 8px;
   text-align: center;
+}
+
+h1:first-of-type {
+  margin-top: -8px;  /* remove gap above first <h1> element */
+}
+
+h1, h2, h3, h4, b {
+  color: #ffd500;
 }
 
 a {

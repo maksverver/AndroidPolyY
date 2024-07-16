@@ -1,6 +1,7 @@
 div.option {
   display: flex;
   flex-direction: horizontal;
+  align-items: center;
   margin: 1em;
 }
 
@@ -13,3 +14,40 @@ div.option div.title {
   min-width: 2em;
   text-align: right;
 }
+
+div.radio-container {
+  margin: 4px 0;
+}
+
+div.radio-container > label > input[type=radio] {
+  display: none;
+}
+
+div.radio-container > label > span {
+  text-align: center;
+  min-width: 3em;
+  border-radius: 16px;
+  padding: 8px 12px;
+  color: #808080;
+  font-weight: bold;
+}
+
+div.radio-container > label > input[type=radio]:checked + span {
+  background: #0095ff;
+  color: white;
+  outline: none;
+}
+
+div.range-container > label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+/*
+Ideally I'd like to style the range slider too, at least making it have the
+same color as the radio buttons, but unfortunately that doesn't seem possbile!
+input[type=range] {
+  color: #0095ff;
+}
+*/
