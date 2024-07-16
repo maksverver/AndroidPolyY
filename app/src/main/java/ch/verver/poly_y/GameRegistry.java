@@ -26,7 +26,7 @@ public class GameRegistry {
     private static final String CURRENT_GAME_AI_PLAYER_KEY = "current_game_ai_player";
     private static final String CURRENT_GAME_AI_CONFIG_KEY = "current_game_ai_config";
     private static final String CURRENT_GAME_IS_CAMPAIGN_KEY = "current_game_is_campaign";
-    private static final String CAMPAIGN_LEVEL_KEY = "current_campaign_level_key";
+    private static final String CAMPAIGN_LEVEL_KEY = "campaign_level";
 
     private static @Nullable GameRegistry instance;
 
