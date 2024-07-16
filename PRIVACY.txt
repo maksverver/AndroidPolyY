@@ -1,0 +1,24 @@
+Privacy policy for Poly-Y for Android, effective from July 16, 2024.
+
+Poly-Y (henceforth, “the app”) is an offline app that only stores information
+on the device on which it is installed.
+
+The app stores the following data:
+
+  * the current game in progress
+  * progress made in campaign mode
+
+The user may delete the stored data at any time, by clearing the app data, or by
+uninstalling the app.
+
+The app:
+
+  * does not collect personal information
+  * does not collect biometric information
+  * does not collect location information
+  * does not contain ads
+  * does not support accounts
+  * does not integrate with online services
+  * does not integrate with third-party apps
+
+For more information, email the author (Maks Verver) at support@verver.ch.
