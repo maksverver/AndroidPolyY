@@ -38,6 +38,11 @@ div.radio-container > label > input[type=radio]:checked + span {
   outline: none;
 }
 
+div.radio-container > label > input[type=radio]:checked:disabled + span {
+  background: #404040;
+  color: #808080;
+}
+
 div.range-container > label {
   display: flex;
   flex-direction: row;

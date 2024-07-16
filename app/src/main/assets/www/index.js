@@ -1,16 +1,11 @@
-const app = typeof window.app === 'object' ? window.app : null;
-
-// Defaults are for testing in a local browser where the app API is not available.
-const campaignLevel = app ? app.getCampaignLevel() : 1;
-const campaignDifficulty = app ? app.getCampaignDifficulty() : 1;
-const campaignAiPlayer = app ? app.getCampaignAiPlayer() : 1;
-
-// Fill in the DOM with values from the app.
-document.getElementById('campaign-level').textContent = String(campaignLevel);
-document.getElementById('campaign-difficulty').textContent = campaignDifficulty;
-document.getElementById('campaign-ai-player').textContent =
-  campaignAiPlayer === 1 ? 'first' :
-  campaignAiPlayer === 2 ? 'second' : 'none';
+if (typeof app === 'object') {
+  // Fill in the DOM with values from the app.
+  document.getElementById('campaign-level').textContent = String(app.getCampaignLevel());
+  document.getElementById('campaign-difficulty').textContent = app.getCampaignDifficulty();
+  document.getElementById('campaign-ai-player').textContent =
+    app.getCampaignAiPlayer() === 1 ? 'first' :
+    app.getCampaignAiPlayer() === 2 ? 'second' : 'none';
+}
 
 // Connect difficulty range slider to value.
 const difficultyRangeElem = document.getElementById('difficulty-range');
@@ -19,13 +14,29 @@ difficultyRangeElem.oninput = function() {
   difficultyValueElem.textContent = String(difficultyRangeElem.value);
 };
 
+// Toggle AI option visibility
+const aiPlayer0Elem = document.getElementById('ai-player-0');
+const aiPlayer1Elem = document.getElementById('ai-player-1');
+const aiPlayer2Elem = document.getElementById('ai-player-2');
+const openingBookOnElem = document.getElementById('opening-book-on');
+const openingBookOffElem = document.getElementById('opening-book-off');
+
+function onAiPlayerChanged() {
+  const aiDisabled = aiPlayer0Elem.checked;
+  openingBookOffElem.disabled = aiDisabled;
+  openingBookOnElem.disabled = aiDisabled;
+  difficultyRangeElem.disabled = aiDisabled;
+}
+
+aiPlayer0Elem.onchange = onAiPlayerChanged;
+aiPlayer1Elem.onchange = onAiPlayerChanged;
+aiPlayer2Elem.onchange = onAiPlayerChanged;
+
+// Start a custom game when the button is called.
 document.getElementById('start-custom-game-button').onclick = function() {
   const pieRule = document.getElementById('pie-rule-on').checked;
-  const aiPlayer =
-      document.getElementById('ai-player-1').checked ? 1 :
-      document.getElementById('ai-player-2').checked ? 2 : 0;
-  const openingBook =
-      document.getElementById('opening-book-on').checked;
-  const difficulty = parseInt(document.getElementById('difficulty-range').value);
+  const aiPlayer = aiPlayer1Elem.checked ? 1 : aiPlayer2Elem.checked ? 2 : 0;
+  const openingBook = openingBookOnElem.checked;
+  const difficulty = parseInt(difficultyRangeElem.value);
   app.startCustomGame(pieRule, aiPlayer, openingBook, difficulty);
 };

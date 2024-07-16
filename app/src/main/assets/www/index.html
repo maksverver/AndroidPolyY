@@ -15,8 +15,8 @@
 </p>
 
 <h1 class="center">Campaign</h1>
-<p class="center">Current level: <span id="campaign-level"></span></p>
-<p class="center small">Difficulty <span id="campaign-difficulty"></span>. AI plays <span id="campaign-ai-player"></span>.</p>
+<p class="center">Current level: <span id="campaign-level">0</span></p>
+<p class="center small">Difficulty <span id="campaign-difficulty">0</span>. AI plays <span id="campaign-ai-player">none</span>.</p>
 <p class="center"><button onclick="app.startCampaignGame()">Start Campaign Game</button></p>
 
 <h1 class="center">Custom</h1>
@@ -35,21 +35,23 @@
         <label><input type="radio" id="ai-player-2" name="ai-player" value="2"> <span>Second</span></label>
     </div>
 </div>
-<div class="option">
-    <div class="title">Opening book: </div>
-    <div class="radio-container">
-        <label><input type="radio" id="opening-book-off" name="opening-book" value="off" checked> <span>Off</span></label>
-        <label><input type="radio" id="opening-book-on" name="opening-book" value="on"> <span>On</span></label>
+<div id="ai-options">
+    <div class="option">
+        <div class="title">Opening book: </div>
+        <div class="radio-container">
+            <label><input type="radio" id="opening-book-off" name="opening-book" value="off" checked> <span>Off</span></label>
+            <label><input type="radio" id="opening-book-on" name="opening-book" value="on"> <span>On</span></label>
+        </div>
     </div>
-</div>
-<div class="option">
-    <div class="title">Difficulty: </div>
-    <div class="range-container">
-        <label>
-            <!-- Keep these values in sync with AiConfig.java -->
-            <input id="difficulty-range" type="range" min="1" max="14" value="5">
-            <span id="difficulty-value">5</span>
-        </label>
+    <div class="option">
+        <div class="title">Difficulty: </div>
+        <div class="range-container">
+            <label>
+                <!-- Keep these values in sync with AiConfig.java -->
+                <input id="difficulty-range" type="range" min="1" max="14" value="5">
+                <span id="difficulty-value">5</span>
+            </label>
+        </div>
     </div>
 </div>
 
