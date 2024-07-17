@@ -1,0 +1,14 @@
+Update version name + version code in app/build.gradle, commit.
+
+In Android Studio: Generate Signed Bundle and/or APK.
+
+(For the APK, use "Poly-Y app" key. For the bundle, use the "Poly-Y bundle" key.)
+
+% mv app/release/app-release.apk PolyY-v1.2.3.apk
+
+Go to https://play.google.com/apps/publish, create a new app release, upload app bundle, publish.
+
+Add tag, push to github (e.g. `git tag v1.2.3 && git push --tags`).
+
+Go to https://github.com/maksverver/AndroidPolyY/releases, create a new release, attach APK.
+
