@@ -4,6 +4,9 @@ Poly-Y is an abstract board game for two players.
 
 <img src="app/src/main/assets/www/board-with-y.png" width="320">
 
+Install the app from the [Google Play Store](https://play.google.com/store/apps/details?id=ch.verver.poly_y),
+or download an APK from the [releases page](https://github.com/maksverver/AndroidPolyY/releases/).
+
 ## Summary of the rules
 
 Players take turns placing stones of their color on empty fields. Corners of
