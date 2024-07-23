@@ -48,11 +48,3 @@ div.range-container > label {
   flex-direction: row;
   align-items: center;
 }
-
-/*
-Ideally I'd like to style the range slider too, at least making it have the
-same color as the radio buttons, but unfortunately that doesn't seem possbile!
-input[type=range] {
-  color: #0095ff;
-}
-*/
