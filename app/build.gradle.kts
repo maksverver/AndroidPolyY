@@ -4,14 +4,14 @@ plugins {
 
 android {
     namespace = "ch.verver.poly_y"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "ch.verver.poly_y"
         minSdk = 21
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 36
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
